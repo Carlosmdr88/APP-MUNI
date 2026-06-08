@@ -40,6 +40,7 @@ document.addEventListener("DOMContentLoaded", createPhotoSlots);
       let currentRecordId = null;
       let pendingPayloadData = null;
       let pollingInterval = null;
+      let queuePollingInterval = null;
 
       let subjectsQueue =
         JSON.parse(localStorage.getItem("subjects_queue")) || [];
@@ -146,9 +147,12 @@ document.addEventListener("DOMContentLoaded", createPhotoSlots);
         document.getElementById(screenId).classList.remove("hidden");
 
         if (screenId === "screen-queue") {
-          stopPolling();
+          startQueuePolling();
           renderQueue();
+        } else {
+          stopQueuePolling();
         }
+
         if (screenId !== "screen-status") {
           stopPolling();
         }
@@ -511,58 +515,91 @@ document.addEventListener("DOMContentLoaded", createPhotoSlots);
       // --- POLLING ENGINE (Comprobación síncrona en base al RecordId) ---
       const statusUrl =
         "https://default6cf2221cc6bd484781777f57b05330.6b.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/a4165f55850d496ea752fc8f53f91475/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=PQoTgyWRjHkQX8xrEkoAeVo3vIin4W8OKZEYSDvkxJ4";
+
+      function updateSubjectStatus(recordId, estado, comentario) {
+        let changed = false;
+        subjectsQueue = subjectsQueue.map((s) => {
+          if (s.RecordId === recordId && s.Estado !== estado) {
+            changed = true;
+            return {
+              ...s,
+              Estado: estado,
+              Comentario: comentario || "",
+            };
+          }
+          return s;
+        });
+
+        if (!changed) return false;
+
+        localStorage.setItem("subjects_queue", JSON.stringify(subjectsQueue));
+        updateBadge();
+        renderQueue();
+
+        if (currentRecordId === recordId) {
+          updateStatusVisuals(estado, comentario || "");
+          showToast(
+            "Estado Actualizado",
+            `El registro ha sido: ${estado}`,
+            false,
+          );
+        }
+        return true;
+      }
+
+      function fetchStatusForRecord(recordId) {
+        if (!webhookUrl) return;
+
+        fetch(statusUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+          body: JSON.stringify({ RecordId: recordId }),
+        })
+          .then((res) => {
+            if (res.ok) return res.json();
+          })
+          .then((data) => {
+            if (data && data.Estado && data.Estado !== "Pendiente") {
+              updateSubjectStatus(recordId, data.Estado, data.Comentario || "");
+            }
+          })
+          .catch(() => console.log("Esperando actualización central..."));
+      }
+
+      function startQueuePolling() {
+        stopQueuePolling();
+        if (!webhookUrl) return;
+
+        queuePollingInterval = setInterval(() => {
+          const pendingRecords = subjectsQueue.filter(
+            (s) => s.Estado === "Pendiente" || s.Estado === "Volver a confirmar",
+          );
+          pendingRecords.forEach((record) => {
+            fetchStatusForRecord(record.RecordId);
+          });
+        }, 5000);
+      }
+
+      function stopQueuePolling() {
+        if (queuePollingInterval) {
+          clearInterval(queuePollingInterval);
+          queuePollingInterval = null;
+        }
+      }
+
       function startPolling(recordId) {
         stopPolling();
         if (!webhookUrl) return;
 
         pollingInterval = setInterval(() => {
-          //fetch(`${webhookUrl}?RecordId=${recordId}`, {
-          // method: "GET",
-          //headers: { Accept: "application/json" },
-          //})
-          fetch(statusUrl, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Accept: "application/json",
-            },
-            body: JSON.stringify({
-              RecordId: recordId,
-            }),
-          })
-            //----/////--///--//--/
-            .then((res) => {
-              if (res.ok) return res.json();
-            })
-            .then((data) => {
-              if (data && data.Estado && data.Estado !== "Pendiente") {
-                // Actualizar base de datos local
-                subjectsQueue = subjectsQueue.map((s) => {
-                  if (s.RecordId === recordId) {
-                    s.Estado = data.Estado;
-                    s.Comentario = data.Comentario || "";
-                  }
-                  return s;
-                });
-                localStorage.setItem(
-                  "subjects_queue",
-                  JSON.stringify(subjectsQueue),
-                );
-                updateBadge();
-
-                // Si el usuario sigue viendo esta tarjeta, refrescar los colores de golpe
-                if (currentRecordId === recordId) {
-                  updateStatusVisuals(data.Estado, data.Comentario || "");
-                  showToast(
-                    "Estado Actualizado",
-                    `El registro ha sido: ${data.Estado}`,
-                    false,
-                  );
-                }
-                stopPolling();
-              }
-            })
-            .catch((err) => console.log("Esperando actualización central..."));
+          fetchStatusForRecord(recordId);
+          const subject = subjectsQueue.find((s) => s.RecordId === recordId);
+          if (!subject || subject.Estado !== "Pendiente") {
+            stopPolling();
+          }
         }, 1000); // Consulta cada 1 segundo
       }
 
