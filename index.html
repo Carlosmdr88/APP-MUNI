@@ -19,7 +19,6 @@
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
     />
 
-    
     <style>
       body {
         font-family: "Plus Jakarta Sans", sans-serif;
@@ -117,7 +116,10 @@
               >
                 Fotografías del Sujeto (Hasta 5)
               </label>
-              <div id="photo-slots-container" class="grid grid-cols-5 gap-2 w-full"></div>
+              <div
+                id="photo-slots-container"
+                class="grid grid-cols-5 gap-2 w-full"
+              ></div>
 
               <div class="hidden">
                 <input
@@ -544,10 +546,35 @@
       </div>
     </div>
 
-    
-  
-<script src="tailwind-config.js"></script>
-<script src="app.js"></script>
-</body>
+    <div
+      id="image-preview-modal"
+      class="hidden absolute inset-0 bg-slate-950/95 z-50 flex items-center justify-center p-6"
+      onclick="closeImagePreview()"
+    >
+      <div
+        class="relative max-w-full max-h-full"
+        onclick="event.stopPropagation()"
+      >
+        <button
+          onclick="closeImagePreview()"
+          class="absolute top-3 right-3 bg-slate-900/80 text-slate-100 w-10 h-10 rounded-full flex items-center justify-center text-lg shadow-lg hover:bg-slate-800 transition"
+        >
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+        <img
+          id="image-preview-large"
+          class="max-w-[95vw] max-h-[85vh] rounded-3xl object-contain border border-white/10 shadow-2xl"
+          src=""
+          alt="Vista ampliada"
+        />
+        <p
+          id="image-preview-caption"
+          class="mt-4 text-sm text-slate-200 text-center"
+        ></p>
+      </div>
+    </div>
 
+    <script src="tailwind-config.js"></script>
+    <script src="app.js"></script>
+  </body>
 </html>

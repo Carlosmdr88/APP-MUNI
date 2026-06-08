@@ -59,7 +59,7 @@ document.addEventListener("DOMContentLoaded", createPhotoSlots);
         if (file) {
           showToast(
             "Procesando",
-            "Comprimiendo fotografía para envío rápido...",
+            "Ajustando fotografía en alta calidad para el envío...",
             false,
           );
 
@@ -72,7 +72,7 @@ document.addEventListener("DOMContentLoaded", createPhotoSlots);
               let width = img.width;
               let height = img.height;
 
-              const max_size = 800;
+              const max_size = 1200;
               if (width > height) {
                 if (width > max_size) {
                   height *= max_size / width;
@@ -90,7 +90,7 @@ document.addEventListener("DOMContentLoaded", createPhotoSlots);
               const ctx = canvas.getContext("2d");
               ctx.drawImage(img, 0, 0, width, height);
 
-              const compressedBase64 = canvas.toDataURL("image/jpeg", 0.7);
+              const compressedBase64 = canvas.toDataURL("image/jpeg", 0.92);
               photosArray[index] = compressedBase64;
 
               const preview = document.getElementById(`slot-preview-${index}`);
@@ -381,6 +381,14 @@ document.addEventListener("DOMContentLoaded", createPhotoSlots);
             </div>
           `;
           container.appendChild(card);
+
+          const imageElement = card.querySelector("img");
+          if (imageElement) {
+            imageElement.addEventListener("click", (event) => {
+              event.stopPropagation();
+              openImagePreview(coverPhoto, `${subject.Nombre}`);
+            });
+          }
         });
       }
 
@@ -400,6 +408,12 @@ document.addEventListener("DOMContentLoaded", createPhotoSlots);
             "aspect-square rounded-lg overflow-hidden bg-slate-800 border border-white/10 relative";
           imgContainer.innerHTML = `<img class="w-full h-full object-cover" src="${foto}" alt="Foto ${i + 1}">`;
           galleryContainer.appendChild(imgContainer);
+          const imgEl = imgContainer.querySelector("img");
+          if (imgEl) {
+            imgEl.addEventListener("click", () => {
+              openImagePreview(foto, `Foto ${i + 1} - ${subject.Nombre}`);
+            });
+          }
         });
 
         for (let i = activeFotos.length; i < 5; i++) {
@@ -585,6 +599,20 @@ document.addEventListener("DOMContentLoaded", createPhotoSlots);
       function closeSettings() {
         document.getElementById("settings-modal").classList.add("hidden");
       }
+
+      function openImagePreview(src, caption = "Imagen ampliada") {
+        const preview = document.getElementById("image-preview-large");
+        const captionEl = document.getElementById("image-preview-caption");
+        preview.src = src;
+        preview.alt = caption;
+        captionEl.innerText = caption;
+        document.getElementById("image-preview-modal").classList.remove("hidden");
+      }
+
+      function closeImagePreview() {
+        document.getElementById("image-preview-modal").classList.add("hidden");
+      }
+
       function saveSettings() {
         const urlInput = document
           .getElementById("setting-webhook-url")
