@@ -1,0 +1,15 @@
+# Dependencias de Node
+node_modules/
+
+# Android
+android/.gradle/
+android/build/
+android/app/build/
+
+# Android Studio
+android/.idea/
+*.iml
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
