@@ -8,7 +8,12 @@ function createPhotoSlots() {
     for (let i = 0; i < 5; i++) {
         const slot = document.createElement("div");
         slot.id = `slot-${i}`;
-        slot.className = "aspect-square rounded-2xl bg-slate-800/80 border-2 border-dashed border-slate-700 flex flex-col items-center justify-center cursor-pointer overflow-hidden relative group transition-all hover:border-sky-500 shadow-inner";
+              const isCameraSlot = i < 3;
+        const slotColorClass = isCameraSlot
+            ? "bg-emerald-950/40 border-emerald-500/40 hover:border-emerald-400"
+            : "bg-amber-950/40 border-amber-500/40 hover:border-amber-400";
+        const iconColorClass = isCameraSlot ? "text-emerald-300" : "text-amber-300";
+        slot.className = `aspect-square rounded-2xl bg-slate-800/80 border-2 border-dashed border-slate-700 flex flex-col items-center justify-center cursor-pointer overflow-hidden relative group transition-all hover:border-sky-500 shadow-inner ${slotColorClass}`;
 
         slot.innerHTML = `
             <span id="slot-empty-${i}" class="text-slate-500 text-base group-hover:text-sky-400">
