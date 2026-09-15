@@ -278,16 +278,28 @@
           height: 195px;
         }
         footer {
-          text-align: center;
+          position: fixed;
+          bottom: 0;
+          left: 0;
           width: 100%;
-          margin-top: 25px;
+
+          text-align: center;
+          padding: 8px 0;
+
           color: #6f91a8;
           font-size: 12px;
           letter-spacing: 1px;
+
+          background: rgba(3, 7, 17, 0.85);
+          backdrop-filter: blur(8px);
+
+          border-top: 1px solid rgba(75, 197, 255, 0.25);
+
+          z-index: 1000;
         }
 
         footer p {
-          margin: 5px 0;
+          margin: 3px 0;
         }
 
         footer a {
@@ -356,6 +368,13 @@
         </div>
       </section>
     </main>
+    <footer>
+      <p>&copy; 2026 Plataforma de Unidad SEMIP</p>
+      <p>
+        Realizado por:
+        <a href="mailto:cdelgador@msj.go.cr">CARLOS M DELGADO R </a>
+      </p>
+    </footer>
     <script>
       /* ============================================================
    IMÁGENES INCRUSTADAS - NO TOCAR
@@ -394,12 +413,5 @@
         window.open(u, "_blank");
       }
     </script>
-    <footer>
-      <p>&copy; 2026 Plataforma de Unidad SEMIP</p>
-      <p>
-        Realizado por:
-        <a href="mailto:cdelgador@msj.go.cr">CARLOS M DELGADO R </a>
-      </p>
-    </footer>
   </body>
 </html>
