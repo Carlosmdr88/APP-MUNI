@@ -277,6 +277,27 @@
           width: 195px;
           height: 195px;
         }
+        footer {
+          text-align: center;
+          width: 100%;
+          margin-top: 25px;
+          color: #6f91a8;
+          font-size: 12px;
+          letter-spacing: 1px;
+        }
+
+        footer p {
+          margin: 5px 0;
+        }
+
+        footer a {
+          color: #4bc5ff;
+          text-decoration: none;
+        }
+
+        footer a:hover {
+          text-shadow: 0 0 10px #4bc5ff;
+        }
       }
     </style>
   </head>
@@ -285,7 +306,7 @@
       <div class="head">
         <img class="logo" id="imgEscudoIzquierdo" />
         <div class="title">
-          <h1>Visualización de Gráficos Estadísticos SEMIP</h1>
+          <h1>Visualización de Gráficos Estadísticos SEMIP📊</h1>
           <div class="line"></div>
           <h2>Policía Municipal de San José</h2>
         </div>
@@ -320,7 +341,7 @@
               ><button class="btn" onclick="abrir('URL_6')">GRÁFICO 6</button>
             </div>
           </div>
-          <button class="btn exit" onclick="salir()">SALIR</button>
+          <button class="btn exit" onclick="salir()">SALIR❌</button>
           <div class="note">SEMIP · SISTEMA DE VISUALIZACIÓN ESTADÍSTICA</div>
         </div>
         <div class="cover" id="cover">
@@ -329,8 +350,8 @@
           <div class="scan"></div>
           <div class="center">
             <img class="semip" id="imgSemip" />
-            <div class="access">ACCESO AL SISTEMA</div>
-            <button class="enter" onclick="ingresar()">INGRESAR</button>
+            <div class="access">ACCESO AL SISTEMA CONFIDENCIAL</div>
+            <button class="enter" onclick="ingresar()">INGRESAR➡️</button>
           </div>
         </div>
       </section>
@@ -373,5 +394,12 @@
         window.open(u, "_blank");
       }
     </script>
+    <footer>
+      <p>&copy; 2026 Plataforma de Unidad SEMIP</p>
+      <p>
+        Realizado por:
+        <a href="mailto:cdelgador@msj.go.cr">CARLOS M DELGADO R </a>
+      </p>
+    </footer>
   </body>
 </html>
