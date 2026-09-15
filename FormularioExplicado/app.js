@@ -23,7 +23,6 @@
 =========================================================
 */
 
-
 // =====================================================
 // 01. VARIABLES Y CONFIGURACIÓN GENERAL
 // =====================================================
@@ -33,32 +32,20 @@
 // =====================================================
 
 function convertToUppercase(input) {
-
-  input.value =
-    input.value.toUpperCase();
-
+  input.value = input.value.toUpperCase();
 }
 
 // ----- Fotografías -----
 
-let photosArray = [
-  null,
-  null,
-  null,
-  null,
-  null
-];
-
+let photosArray = [null, null, null, null, null];
 
 // ----- Registro actualmente seleccionado -----
 
 let currentRecordId = null;
 
-
 // ----- Datos preparados antes de enviar -----
 
 let pendingPayloadData = null;
-
 
 // ----- Temporizadores de consulta -----
 
@@ -66,14 +53,9 @@ let pollingInterval = null;
 
 let queuePollingInterval = null;
 
-
 // ----- Cola almacenada en el dispositivo -----
 
-let subjectsQueue =
-  JSON.parse(
-    localStorage.getItem("subjects_queue")
-  ) || [];
-
+let subjectsQueue = JSON.parse(localStorage.getItem("subjects_queue")) || [];
 
 // =====================================================
 // URL PARA ENVIAR REGISTROS
@@ -90,11 +72,7 @@ let subjectsQueue =
 const DEFAULT_WEBHOOK_URL =
   "https://default6cf2221cc6bd484781777f57b05330.6b.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/758af806a6fc432aae55cddad7947437/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=EOAZbzDEi-JEdRYBZegenftRJliSSjqk60c8-_3Wl78";
 
-
-let webhookUrl =
-  localStorage.getItem("pa_webhook_url") ||
-  DEFAULT_WEBHOOK_URL;
-
+let webhookUrl = localStorage.getItem("pa_webhook_url") || DEFAULT_WEBHOOK_URL;
 
 // =====================================================
 // URL PARA CONSULTAR EL ESTADO
@@ -107,14 +85,11 @@ let webhookUrl =
 const statusUrl =
   "https://default6cf2221cc6bd484781777f57b05330.6b.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/a4165f55850d496ea752fc8f53f91475/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=PQoTgyWRjHkQX8xrEkoAeVo3vIin4W8OKZEYSDvkxJ4";
 
-
-
 // =====================================================
 // 02. INICIALIZACIÓN DE LA APLICACIÓN
 // =====================================================
 
 document.addEventListener("DOMContentLoaded", () => {
-
   // Crear los 5 espacios para fotografías
   createPhotoSlots();
 
@@ -127,7 +102,6 @@ document.addEventListener("DOMContentLoaded", () => {
   // Mostrar hora inmediatamente
   updateClock();
 
-
   // ---------------------------------------------------
   // CONFIGURACIÓN
   // ---------------------------------------------------
@@ -139,80 +113,47 @@ document.addEventListener("DOMContentLoaded", () => {
   // eliminamos el modal de configuración.
   // ---------------------------------------------------
 
-  const webhookInput =
-    document.getElementById("setting-webhook-url");
+  const webhookInput = document.getElementById("setting-webhook-url");
 
   if (webhookInput) {
-
     webhookInput.value = webhookUrl;
-
   }
-
 });
-
-
 
 // =====================================================
 // 03. SISTEMA DE FOTOGRAFÍAS
 // =====================================================
-
 
 // -----------------------------------------------------
 // Crear los 5 espacios de fotografías
 // -----------------------------------------------------
 
 function createPhotoSlots() {
-
-  const container =
-    document.getElementById(
-      "photo-slots-container"
-    );
-
+  const container = document.getElementById("photo-slots-container");
 
   if (!container) {
-
     return;
-
   }
-
 
   container.innerHTML = "";
 
-
   for (let i = 0; i < 5; i++) {
-
-
-    const slot =
-      document.createElement("div");
-
+    const slot = document.createElement("div");
 
     slot.id = `slot-${i}`;
-
 
     // Las primeras 3 fotografías se toman
     // principalmente con cámara.
     //
     // Las últimas 2 pueden utilizarse como apoyo.
 
-    const isCameraSlot =
-      i < 3;
+    const isCameraSlot = i < 3;
 
+    const slotColorClass = isCameraSlot
+      ? "bg-emerald-950/40 border-emerald-500/40 hover:border-emerald-400"
+      : "bg-amber-950/40 border-amber-500/40 hover:border-amber-400";
 
-    const slotColorClass =
-      isCameraSlot
-
-        ? "bg-emerald-950/40 border-emerald-500/40 hover:border-emerald-400"
-
-        : "bg-amber-950/40 border-amber-500/40 hover:border-amber-400";
-
-
-    const iconColorClass =
-      isCameraSlot
-
-        ? "text-emerald-300"
-
-        : "text-amber-300";
-
+    const iconColorClass = isCameraSlot ? "text-emerald-300" : "text-amber-300";
 
     slot.className = `
       aspect-square
@@ -231,7 +172,6 @@ function createPhotoSlots() {
       shadow-inner
       ${slotColorClass}
     `;
-
 
     slot.innerHTML = `
 
@@ -288,1458 +228,700 @@ function createPhotoSlots() {
 
     `;
 
-
     // Abrir cámara / selector de archivo
-
-    slot.addEventListener(
-      "click",
-      () => {
-
+    if (i < 3) {
+      slot.addEventListener("click", () => {
         triggerPhotoSlot(i);
-
-      }
-    );
-
+      });
+    }
 
     container.appendChild(slot);
 
-
     // Botón para eliminar fotografía
 
-    const removeButton =
-      slot.querySelector("button");
+    const removeButton = slot.querySelector("button");
 
-
-    removeButton.addEventListener(
-      "click",
-      (event) => {
-
-        removePhotoSlot(
-          event,
-          i
-        );
-
-      }
-    );
-
+    removeButton.addEventListener("click", (event) => {
+      removePhotoSlot(event, i);
+    });
   }
-
 }
-
-
 
 // -----------------------------------------------------
 // Activar input de fotografía
 // -----------------------------------------------------
 
 function triggerPhotoSlot(index) {
-
-  const input =
-    document.getElementById(
-      `input-file-${index}`
-    );
-
+  const input = document.getElementById(`input-file-${index}`);
 
   if (!input) {
-
     return;
-
   }
 
-
   input.click();
-
 }
-
-
 
 // -----------------------------------------------------
 // Procesar fotografía seleccionada
 // -----------------------------------------------------
 
 function handlePhotoSlotChange(index) {
-
-  const input =
-    document.getElementById(
-      `input-file-${index}`
-    );
-
+  const input = document.getElementById(`input-file-${index}`);
 
   if (!input) {
-
     return;
-
   }
 
-
-  const file =
-    input.files[0];
-
+  const file = input.files[0];
 
   if (!file) {
-
     return;
-
   }
 
-
   showToast(
-
     "Procesando",
 
     "Ajustando fotografía en alta calidad para el envío...",
 
-    false
-
+    false,
   );
 
+  const reader = new FileReader();
 
-  const reader =
-    new FileReader();
+  reader.onload = function (event) {
+    const img = new Image();
 
+    img.src = event.target.result;
 
-  reader.onload =
-    function (event) {
+    img.onload = function () {
+      const canvas = document.createElement("canvas");
 
+      let width = img.width;
 
-      const img =
-        new Image();
+      let height = img.height;
 
+      // Tamaño máximo de imagen
 
-      img.src =
-        event.target.result;
+      const MAX_SIZE = 1200;
 
+      // -------------------------------------------------
+      // Reducir tamaño manteniendo proporciones
+      // -------------------------------------------------
 
-      img.onload =
-        function () {
+      if (width > height) {
+        if (width > MAX_SIZE) {
+          height *= MAX_SIZE / width;
 
+          width = MAX_SIZE;
+        }
+      } else {
+        if (height > MAX_SIZE) {
+          width *= MAX_SIZE / height;
 
-          const canvas =
-            document.createElement(
-              "canvas"
-            );
+          height = MAX_SIZE;
+        }
+      }
 
+      canvas.width = width;
 
-          let width =
-            img.width;
+      canvas.height = height;
 
+      const ctx = canvas.getContext("2d");
 
-          let height =
-            img.height;
+      ctx.drawImage(
+        img,
 
+        0,
 
-          // Tamaño máximo de imagen
+        0,
 
-          const MAX_SIZE =
-            1200;
+        width,
 
+        height,
+      );
 
-          // -------------------------------------------------
-          // Reducir tamaño manteniendo proporciones
-          // -------------------------------------------------
+      // Comprimir imagen en JPEG
 
-          if (width > height) {
+      const compressedBase64 = canvas.toDataURL("image/jpeg", 0.92);
 
+      photosArray[index] = compressedBase64;
 
-            if (width > MAX_SIZE) {
+      // -------------------------------------------------
+      // Mostrar vista previa
+      // -------------------------------------------------
 
-              height *=
-                MAX_SIZE / width;
+      const preview = document.getElementById(`slot-preview-${index}`);
 
-              width =
-                MAX_SIZE;
+      const emptyState = document.getElementById(`slot-empty-${index}`);
 
-            }
+      const removeBtn = document.getElementById(`slot-remove-${index}`);
 
+      if (preview) {
+        preview.src = compressedBase64;
 
-          } else {
+        preview.classList.remove("hidden");
+      }
 
+      if (emptyState) {
+        emptyState.classList.add("hidden");
+      }
 
-            if (height > MAX_SIZE) {
+      if (removeBtn) {
+        removeBtn.classList.remove("hidden");
+      }
 
-              width *=
-                MAX_SIZE / height;
+      showToast(
+        "Foto Lista",
 
-              height =
-                MAX_SIZE;
+        "Imagen optimizada con éxito.",
 
-            }
-
-          }
-
-
-          canvas.width =
-            width;
-
-
-          canvas.height =
-            height;
-
-
-          const ctx =
-            canvas.getContext("2d");
-
-
-          ctx.drawImage(
-
-            img,
-
-            0,
-
-            0,
-
-            width,
-
-            height
-
-          );
-
-
-          // Comprimir imagen en JPEG
-
-          const compressedBase64 =
-            canvas.toDataURL(
-              "image/jpeg",
-              0.92
-            );
-
-
-          photosArray[index] =
-            compressedBase64;
-
-
-          // -------------------------------------------------
-          // Mostrar vista previa
-          // -------------------------------------------------
-
-          const preview =
-            document.getElementById(
-              `slot-preview-${index}`
-            );
-
-
-          const emptyState =
-            document.getElementById(
-              `slot-empty-${index}`
-            );
-
-
-          const removeBtn =
-            document.getElementById(
-              `slot-remove-${index}`
-            );
-
-
-          if (preview) {
-
-            preview.src =
-              compressedBase64;
-
-            preview.classList.remove(
-              "hidden"
-            );
-
-          }
-
-
-          if (emptyState) {
-
-            emptyState.classList.add(
-              "hidden"
-            );
-
-          }
-
-
-          if (removeBtn) {
-
-            removeBtn.classList.remove(
-              "hidden"
-            );
-
-          }
-
-
-          showToast(
-
-            "Foto Lista",
-
-            "Imagen optimizada con éxito.",
-
-            false
-
-          );
-
-        };
-
+        false,
+      );
     };
-
+  };
 
   reader.readAsDataURL(file);
-
 }
-
-
 
 // -----------------------------------------------------
 // Eliminar una fotografía
 // -----------------------------------------------------
 
-function removePhotoSlot(
-  event,
-  index
-) {
-
-
+function removePhotoSlot(event, index) {
   event.stopPropagation();
 
+  photosArray[index] = null;
 
-  photosArray[index] =
-    null;
-
-
-  const input =
-    document.getElementById(
-      `input-file-${index}`
-    );
-
+  const input = document.getElementById(`input-file-${index}`);
 
   if (input) {
-
-    input.value =
-      "";
-
+    input.value = "";
   }
 
+  const preview = document.getElementById(`slot-preview-${index}`);
 
-  const preview =
-    document.getElementById(
-      `slot-preview-${index}`
-    );
+  const emptyState = document.getElementById(`slot-empty-${index}`);
 
-
-  const emptyState =
-    document.getElementById(
-      `slot-empty-${index}`
-    );
-
-
-  const removeBtn =
-    document.getElementById(
-      `slot-remove-${index}`
-    );
-
+  const removeBtn = document.getElementById(`slot-remove-${index}`);
 
   if (preview) {
-
-    preview.classList.add(
-      "hidden"
-    );
-
+    preview.classList.add("hidden");
   }
-
 
   if (emptyState) {
-
-    emptyState.classList.remove(
-      "hidden"
-    );
-
+    emptyState.classList.remove("hidden");
   }
-
 
   if (removeBtn) {
-
-    removeBtn.classList.add(
-      "hidden"
-    );
-
+    removeBtn.classList.add("hidden");
   }
-
 }
-
-
 
 // -----------------------------------------------------
 // Limpiar las 5 fotografías
 // -----------------------------------------------------
 
 function resetAllPhotoSlots() {
+  photosArray = [null, null, null, null, null];
 
+  for (let i = 0; i < 5; i++) {
+    const input = document.getElementById(`input-file-${i}`);
 
-  photosArray = [
+    const preview = document.getElementById(`slot-preview-${i}`);
 
-    null,
-    null,
-    null,
-    null,
-    null
+    const emptyState = document.getElementById(`slot-empty-${i}`);
 
-  ];
-
-
-  for (
-    let i = 0;
-    i < 5;
-    i++
-  ) {
-
-
-    const input =
-      document.getElementById(
-        `input-file-${i}`
-      );
-
-
-    const preview =
-      document.getElementById(
-        `slot-preview-${i}`
-      );
-
-
-    const emptyState =
-      document.getElementById(
-        `slot-empty-${i}`
-      );
-
-
-    const removeBtn =
-      document.getElementById(
-        `slot-remove-${i}`
-      );
-
+    const removeBtn = document.getElementById(`slot-remove-${i}`);
 
     if (input) {
-
-      input.value =
-        "";
-
+      input.value = "";
     }
-
 
     if (preview) {
-
-      preview.classList.add(
-        "hidden"
-      );
-
+      preview.classList.add("hidden");
     }
-
 
     if (emptyState) {
-
-      emptyState.classList.remove(
-        "hidden"
-      );
-
+      emptyState.classList.remove("hidden");
     }
-
 
     if (removeBtn) {
-
-      removeBtn.classList.add(
-        "hidden"
-      );
-
+      removeBtn.classList.add("hidden");
     }
-
   }
-
 }
-
-
 
 // =====================================================
 // 04. NAVEGACIÓN ENTRE PANTALLAS
 // =====================================================
 
 function goToScreen(screenId) {
-
-
-  const screens = [
-
-    "screen-capture",
-
-    "screen-queue",
-
-    "screen-status"
-
-  ];
-
+  const screens = ["screen-capture", "screen-queue", "screen-status"];
 
   // Ocultar todas las pantallas
 
-  screens.forEach(
-    (id) => {
+  screens.forEach((id) => {
+    const screen = document.getElementById(id);
 
-
-      const screen =
-        document.getElementById(id);
-
-
-      if (screen) {
-
-        screen.classList.add(
-          "hidden"
-        );
-
-      }
-
+    if (screen) {
+      screen.classList.add("hidden");
     }
-  );
-
+  });
 
   // Ocultar modales principales
 
-  const successModal =
-    document.getElementById(
-      "modal-success"
-    );
-
+  const successModal = document.getElementById("modal-success");
 
   if (successModal) {
-
-    successModal.classList.add(
-      "hidden"
-    );
-
+    successModal.classList.add("hidden");
   }
 
-
-  const warningModal =
-    document.getElementById(
-      "modal-warning-confirm"
-    );
-
+  const warningModal = document.getElementById("modal-warning-confirm");
 
   if (warningModal) {
-
-    warningModal.classList.add(
-      "hidden"
-    );
-
+    warningModal.classList.add("hidden");
   }
-
 
   // Mostrar pantalla solicitada
 
-  const destination =
-    document.getElementById(
-      screenId
-    );
-
+  const destination = document.getElementById(screenId);
 
   if (destination) {
-
-    destination.classList.remove(
-      "hidden"
-    );
-
+    destination.classList.remove("hidden");
   }
-
 
   // ---------------------------------------------------
   // Si estamos en la cola,
   // iniciar consulta automática
   // ---------------------------------------------------
 
-  if (
-    screenId ===
-    "screen-queue"
-  ) {
-
+  if (screenId === "screen-queue") {
     startQueuePolling();
 
     renderQueue();
-
   } else {
-
     stopQueuePolling();
-
   }
-
 
   // ---------------------------------------------------
   // Si salimos del detalle,
   // detener consulta individual
   // ---------------------------------------------------
 
-  if (
-    screenId !==
-    "screen-status"
-  ) {
-
+  if (screenId !== "screen-status") {
     stopPolling();
-
   }
-
 }
-
-
 
 // =====================================================
 // CONTADOR DE COLA
 // =====================================================
 
 function updateBadge() {
+  const pendingAndAlerts = subjectsQueue.filter(
+    (subject) =>
+      subject.Estado === "Pendiente" || subject.Estado === "Volver a confirmar",
+  ).length;
 
-
-  const pendingAndAlerts =
-    subjectsQueue.filter(
-
-      (subject) =>
-
-        subject.Estado ===
-          "Pendiente" ||
-
-        subject.Estado ===
-          "Volver a confirmar"
-
-    ).length;
-
-
-  const badge =
-    document.getElementById(
-      "queue-count-badge"
-    );
-
+  const badge = document.getElementById("queue-count-badge");
 
   if (badge) {
-
-    badge.innerText =
-      pendingAndAlerts;
-
+    badge.innerText = pendingAndAlerts;
   }
-
 }
-
-
 
 // =====================================================
 // 05. SISTEMA DE NOTIFICACIONES
 // =====================================================
 
-function showToast(
-  title,
-  message,
-  isError = true
-) {
-
-
-  const toast =
-    document.getElementById(
-      "toast-notification"
-    );
-
+function showToast(title, message, isError = true) {
+  const toast = document.getElementById("toast-notification");
 
   if (!toast) {
-
     return;
-
   }
 
+  const icon = document.getElementById("toast-icon");
 
-  const icon =
-    document.getElementById(
-      "toast-icon"
-    );
+  const titleElement = document.getElementById("toast-title");
 
-
-  const titleElement =
-    document.getElementById(
-      "toast-title"
-    );
-
-
-  const messageElement =
-    document.getElementById(
-      "toast-message"
-    );
-
+  const messageElement = document.getElementById("toast-message");
 
   if (titleElement) {
-
-    titleElement.innerText =
-      title;
-
+    titleElement.innerText = title;
   }
-
 
   if (messageElement) {
-
-    messageElement.innerText =
-      message;
-
+    messageElement.innerText = message;
   }
-
 
   // ---------------------------------------------------
   // Error
   // ---------------------------------------------------
 
   if (isError) {
+    toast.classList.remove("bg-emerald-500/95");
 
-
-    toast.classList.remove(
-      "bg-emerald-500/95"
-    );
-
-
-    toast.classList.add(
-      "bg-red-500/95"
-    );
-
+    toast.classList.add("bg-red-500/95");
 
     if (icon) {
-
-      icon.className =
-        "fa-solid fa-circle-exclamation";
-
+      icon.className = "fa-solid fa-circle-exclamation";
     }
-
-
   } else {
-
-
     // -------------------------------------------------
     // Mensaje correcto
     // -------------------------------------------------
 
-    toast.classList.remove(
-      "bg-red-500/95"
-    );
+    toast.classList.remove("bg-red-500/95");
 
-
-    toast.classList.add(
-      "bg-emerald-500/95"
-    );
-
+    toast.classList.add("bg-emerald-500/95");
 
     if (icon) {
-
-      icon.className =
-        "fa-solid fa-circle-check";
-
+      icon.className = "fa-solid fa-circle-check";
     }
-
   }
-
 
   // Mostrar
 
   toast.classList.remove(
-
     "-translate-y-24",
 
-    "opacity-0"
-
+    "opacity-0",
   );
-
 
   // Ocultar después de 4 segundos
 
-  setTimeout(
-    () => {
+  setTimeout(() => {
+    toast.classList.add(
+      "-translate-y-24",
 
-
-      toast.classList.add(
-
-        "-translate-y-24",
-
-        "opacity-0"
-
-      );
-
-
-    },
-    4000
-  );
-
+      "opacity-0",
+    );
+  }, 4000);
 }
-
-
 
 // =====================================================
 // 06. FORMULARIO Y CREACIÓN DEL REGISTRO
 // =====================================================
 
 function checkFormBeforeSubmit() {
+  const name = document.getElementById("input-name").value.trim();
 
+  const docId = document.getElementById("input-id").value.trim();
 
-  const name =
-    document
-      .getElementById(
-        "input-name"
-      )
-      .value
-      .trim();
+  const dob = document.getElementById("input-dob").value.trim();
 
+  const nationality = document.getElementById("input-nationality").value.trim();
 
-  const docId =
-    document
-      .getElementById(
-        "input-id"
-      )
-      .value
-      .trim();
+  const district = document.getElementById("input-district").value.trim();
 
+  const location = document.getElementById("input-location").value.trim();
 
-  const dob =
-    document
-      .getElementById(
-        "input-dob"
-      )
-      .value
-      .trim();
-
-
-  const nationality =
-    document
-      .getElementById(
-        "input-nationality"
-      )
-      .value
-      .trim();
-    
-  const district =
-    document
-      .getElementById(
-       "input-district"
-    )
-    .value
-    .trim();
-
-
-  const location =
-    document
-      .getElementById(
-        "input-location"
-      )
-      .value
-      .trim();
-
-
-  const activePhotos =
-    photosArray.filter(
-
-      (photo) =>
-        photo !== null
-
-    );
-
+  const activePhotos = photosArray.filter((photo) => photo !== null);
 
   // ---------------------------------------------------
   // Comprobar campos vacíos
   // ---------------------------------------------------
 
-  const emptyFields =
-    [];
-
+  const emptyFields = [];
 
   if (!name) {
-
-    emptyFields.push(
-      "• Nombre Completo"
-    );
-
+    emptyFields.push("• Nombre Completo");
   }
-
 
   if (!docId) {
-
-    emptyFields.push(
-      "• Documento / ID"
-    );
-
+    emptyFields.push("• Documento / ID");
   }
-
 
   if (!dob) {
-
-    emptyFields.push(
-      "• Fecha de Nacimiento"
-    );
-
+    emptyFields.push("• Fecha de Nacimiento");
   }
-
 
   if (!nationality) {
-
-    emptyFields.push(
-      "• Nacionalidad"
-    );
-
+    emptyFields.push("• Nacionalidad");
   }
   if (!district) {
-
-    emptyFields.push(
-     "• Distrito"
-   );
-
+    emptyFields.push("• Distrito");
   }
-
 
   if (!location) {
-
-    emptyFields.push(
-      "• Lugar de Consulta"
-    );
-
+    emptyFields.push("• Lugar de Consulta");
   }
 
-
-  if (
-    activePhotos.length === 0
-  ) {
-
-    emptyFields.push(
-      "• Sin Fotografías"
-    );
-
+  if (activePhotos.length === 0) {
+    emptyFields.push("• Sin Fotografías");
   }
-
 
   // ---------------------------------------------------
   // Crear ID único del registro
   // ---------------------------------------------------
 
-  const recordId =
-    "REC_" + Date.now();
+  const recordId = "REC_" + Date.now();
 
+  const now = new Date();
 
-  const now =
-    new Date();
-
-
-  const isoTimestamp =
-    now.toISOString();
-
+  const isoTimestamp = now.toISOString();
 
   // ---------------------------------------------------
   // Preparar información
   // ---------------------------------------------------
 
   pendingPayloadData = {
+    RecordId: recordId,
 
+    Nombre: name || "Sin especificar",
 
-    RecordId:
-      recordId,
+    Documento: docId || "S/D",
 
+    FechaNacimiento: dob || "No especificada",
 
-    Nombre:
-      name ||
-      "Sin especificar",
+    Nacionalidad: nationality || "Desconocida",
 
+    Distrito: district || "NO ESPECIFICADO",
 
-    Documento:
-      docId ||
-      "S/D",
-
-
-    FechaNacimiento:
-      dob ||
-      "No especificada",
-
-
-    Nacionalidad:
-      nationality ||
-      "Desconocida",
-    
-    Distrito:
-      district ||
-      "NO ESPECIFICADO",
-
-
-    LugarConsulta:
-      location ||
-      "Puesto General",
-
+    LugarConsulta: location || "Puesto General",
 
     Fotos:
-
       activePhotos.length > 0
-
         ? activePhotos
+        : ["https://placehold.co/150x150/0f172a/334155?text=Sin+Foto"],
 
-        : [
-            "https://placehold.co/150x150/0f172a/334155?text=Sin+Foto"
-          ],
+    FechaCreacion: isoTimestamp,
 
+    Estado: "Pendiente",
 
-    FechaCreacion:
-      isoTimestamp,
-
-
-    Estado:
-      "Pendiente",
-
-
-    Comentario:
-      ""
-
+    Comentario: "",
   };
-
 
   // ---------------------------------------------------
   // Si faltan datos mostrar advertencia
   // ---------------------------------------------------
 
-  if (
-    emptyFields.length > 0
-  ) {
-
-
-    const listContainer =
-      document.getElementById(
-        "warning-fields-list"
-      );
-
+  if (emptyFields.length > 0) {
+    const listContainer = document.getElementById("warning-fields-list");
 
     if (listContainer) {
+      listContainer.innerHTML = "";
 
+      emptyFields.forEach((field) => {
+        const item = document.createElement("p");
 
-      listContainer.innerHTML =
-        "";
+        item.innerText = field;
 
-
-      emptyFields.forEach(
-        (field) => {
-
-
-          const item =
-            document.createElement(
-              "p"
-            );
-
-
-          item.innerText =
-            field;
-
-
-          listContainer.appendChild(
-            item
-          );
-
-        }
-      );
-
+        listContainer.appendChild(item);
+      });
     }
 
-
-    const modal =
-      document.getElementById(
-        "modal-warning-confirm"
-      );
-
+    const modal = document.getElementById("modal-warning-confirm");
 
     if (modal) {
-
-      modal.classList.remove(
-        "hidden"
-      );
-
+      modal.classList.remove("hidden");
     }
 
-
     return;
-
   }
-
 
   // ---------------------------------------------------
   // Si todo está correcto enviar
   // ---------------------------------------------------
 
   proceedWithSubmit();
-
 }
-
-
 
 // -----------------------------------------------------
 // Cerrar advertencia
 // -----------------------------------------------------
 
 function closeWarningModal() {
-
-
-  const modal =
-    document.getElementById(
-      "modal-warning-confirm"
-    );
-
+  const modal = document.getElementById("modal-warning-confirm");
 
   if (modal) {
-
-    modal.classList.add(
-      "hidden"
-    );
-
+    modal.classList.add("hidden");
   }
 
-
-  pendingPayloadData =
-    null;
-
+  pendingPayloadData = null;
 }
-
-
 
 // -----------------------------------------------------
 // Confirmar envío
 // -----------------------------------------------------
 
 function proceedWithSubmit() {
-
-
   if (!pendingPayloadData) {
-
     return;
-
   }
 
-
   const finalSubject = {
-
-    ...pendingPayloadData
-
+    ...pendingPayloadData,
   };
-
 
   // Cerrar advertencia
 
-  const warningModal =
-    document.getElementById(
-      "modal-warning-confirm"
-    );
-
+  const warningModal = document.getElementById("modal-warning-confirm");
 
   if (warningModal) {
-
-    warningModal.classList.add(
-      "hidden"
-    );
-
+    warningModal.classList.add("hidden");
   }
-
 
   // Agregar a la cola local
 
-  subjectsQueue.unshift(
-    finalSubject
-  );
-
+  subjectsQueue.unshift(finalSubject);
 
   // Guardar localmente
 
   localStorage.setItem(
-
     "subjects_queue",
 
-    JSON.stringify(
-      subjectsQueue
-    )
-
+    JSON.stringify(subjectsQueue),
   );
-
 
   updateBadge();
 
-
   // Ocultar formulario
 
-  const captureScreen =
-    document.getElementById(
-      "screen-capture"
-    );
-
+  const captureScreen = document.getElementById("screen-capture");
 
   if (captureScreen) {
-
-    captureScreen.classList.add(
-      "hidden"
-    );
-
+    captureScreen.classList.add("hidden");
   }
-
 
   // Mostrar confirmación
 
-  const successModal =
-    document.getElementById(
-      "modal-success"
-    );
-
+  const successModal = document.getElementById("modal-success");
 
   if (successModal) {
-
-    successModal.classList.remove(
-      "hidden"
-    );
-
+    successModal.classList.remove("hidden");
   }
-
 
   // Enviar al servidor
 
   if (webhookUrl) {
-
-
-    sendDataToCloud(
-      finalSubject
-    );
-
-
+    sendDataToCloud(finalSubject);
   } else {
-
-
     showToast(
-
       "Guardado Local",
 
       "No se ha configurado la conexión con Power Automate.",
 
-      true
-
+      true,
     );
-
   }
 
-
-  pendingPayloadData =
-    null;
-
+  pendingPayloadData = null;
 }
-
-
 
 // -----------------------------------------------------
 // Preparar nuevo registro
 // -----------------------------------------------------
 
 function prepareNextCapture() {
+  document.getElementById("input-name").value = "";
 
+  document.getElementById("input-id").value = "";
 
-  document.getElementById(
-    "input-name"
-  ).value = "";
+  document.getElementById("input-dob").value = "";
 
+  document.getElementById("input-nationality").value = "";
 
-  document.getElementById(
-    "input-id"
-  ).value = "";
+  document.getElementById("input-location").value = "";
 
-
-  document.getElementById(
-    "input-dob"
-  ).value = "";
-
-
-  document.getElementById(
-    "input-nationality"
-  ).value = "";
-
-
-  document.getElementById(
-    "input-location"
-  ).value = "";
-
-    document.getElementById(
-    "input-district"
-  ).value = "";
-
+  document.getElementById("input-district").value = "";
 
   resetAllPhotoSlots();
 
-
-  goToScreen(
-    "screen-capture"
-  );
-
+  goToScreen("screen-capture");
 }
-
-
 
 // =====================================================
 // 07. ENVÍO A POWER AUTOMATE / SHAREPOINT
 // =====================================================
 
 function sendDataToCloud(subject) {
+  fetch(webhookUrl, {
+    method: "POST",
 
+    headers: {
+      "Content-Type": "application/json",
+    },
 
-  fetch(
-    webhookUrl,
-    {
-
-
-      method:
-        "POST",
-
-
-      headers: {
-
-        "Content-Type":
-          "application/json"
-
-      },
-
-
-      body:
-        JSON.stringify(
-          subject
-        )
-
-    }
-  )
-
-
-    .then(
-      (response) => {
-
-
-        if (response.ok) {
-
-
-          showToast(
-
-            "Sincronizado",
-
-            "Registro enviado a SharePoint.",
-
-            false
-
-          );
-
-
-        } else {
-
-
-          showToast(
-
-            "Fallo de Servidor",
-
-            `Código HTTP ${response.status}: El flujo rechazó el envío.`,
-
-            true
-
-          );
-
-        }
-
-      }
-    )
-
-
-    .catch(
-      () => {
-
-
+    body: JSON.stringify(subject),
+  })
+    .then((response) => {
+      if (response.ok) {
         showToast(
+          "Sincronizado",
 
-          "Modo Offline",
+          "Registro enviado a SharePoint.",
 
-          "El registro permanece guardado localmente.",
-
-          true
-
+          false,
         );
+      } else {
+        showToast(
+          "Fallo de Servidor",
 
+          `Código HTTP ${response.status}: El flujo rechazó el envío.`,
+
+          true,
+        );
       }
-    );
+    })
 
+    .catch(() => {
+      showToast(
+        "Modo Offline",
+
+        "El registro permanece guardado localmente.",
+
+        true,
+      );
+    });
 }
-
-
 
 // =====================================================
 // 08. COLA DE ESPERA
 // =====================================================
 
 function renderQueue() {
+  const container = document.getElementById("queue-list-container");
 
-
-  const container =
-    document.getElementById(
-      "queue-list-container"
-    );
-
-
-  const emptyState =
-    document.getElementById(
-      "queue-empty-state"
-    );
-
+  const emptyState = document.getElementById("queue-empty-state");
 
   if (!container) {
-
     return;
-
   }
-
 
   // ---------------------------------------------------
   // Borrar tarjetas anteriores
   // ---------------------------------------------------
 
-  const cards =
-    container.querySelectorAll(
-      ".subject-card"
-    );
+  const cards = container.querySelectorAll(".subject-card");
 
-
-  cards.forEach(
-    (card) =>
-      card.remove()
-  );
-
+  cards.forEach((card) => card.remove());
 
   // ---------------------------------------------------
   // Cola vacía
   // ---------------------------------------------------
 
-  if (
-    subjectsQueue.length === 0
-  ) {
-
-
+  if (subjectsQueue.length === 0) {
     if (emptyState) {
-
-      emptyState.classList.remove(
-        "hidden"
-      );
-
+      emptyState.classList.remove("hidden");
     }
 
-
     return;
-
   }
-
 
   if (emptyState) {
-
-    emptyState.classList.add(
-      "hidden"
-    );
-
+    emptyState.classList.add("hidden");
   }
-
 
   // ---------------------------------------------------
   // Crear tarjetas
   // ---------------------------------------------------
 
-  subjectsQueue.forEach(
-    (subject) => {
+  subjectsQueue.forEach((subject) => {
+    const card = document.createElement("div");
 
-
-      const card =
-        document.createElement(
-          "div"
-        );
-
-
-      card.className = `
+    card.className = `
         subject-card
         bg-slate-800/80
         hover:bg-slate-800
@@ -1756,124 +938,67 @@ function renderQueue() {
         active:scale-[0.98]
       `;
 
+    card.onclick = () => {
+      openSubjectDetail(subject.RecordId);
+    };
 
-      card.onclick =
-        () => {
+    // -------------------------------------------------
+    // Estado por defecto
+    // -------------------------------------------------
 
-          openSubjectDetail(
-            subject.RecordId
-          );
+    let statusBadgeClass = "bg-slate-700/50 text-slate-400 border-slate-600/50";
 
-        };
+    let statusIcon = "fa-clock animate-pulse";
 
+    let statusText = "Espera";
 
-      // -------------------------------------------------
-      // Estado por defecto
-      // -------------------------------------------------
+    // -------------------------------------------------
+    // Aprobado
+    // -------------------------------------------------
 
-      let statusBadgeClass =
-        "bg-slate-700/50 text-slate-400 border-slate-600/50";
+    if (subject.Estado === "Aprobado") {
+      statusBadgeClass =
+        "bg-emerald-500/10 text-emerald-400 border-emerald-500/20";
 
+      statusIcon = "fa-circle-check";
 
-      let statusIcon =
-        "fa-clock animate-pulse";
-
-
-      let statusText =
-        "Espera";
-
-
-      // -------------------------------------------------
-      // Aprobado
-      // -------------------------------------------------
-
-      if (
-        subject.Estado ===
-        "Aprobado"
-      ) {
-
-
-        statusBadgeClass =
-          "bg-emerald-500/10 text-emerald-400 border-emerald-500/20";
-
-
-        statusIcon =
-          "fa-circle-check";
-
-
-        statusText =
-          "Aprobado";
-
+      statusText = "Aprobado";
 
       // -------------------------------------------------
       // Rechazado
       // -------------------------------------------------
+    } else if (subject.Estado === "Rechazado") {
+      statusBadgeClass = "bg-red-500/10 text-red-400 border-red-500/20";
 
-      } else if (
+      statusIcon = "fa-circle-xmark";
 
-        subject.Estado ===
-        "Rechazado"
-
-      ) {
-
-
-        statusBadgeClass =
-          "bg-red-500/10 text-red-400 border-red-500/20";
-
-
-        statusIcon =
-          "fa-circle-xmark";
-
-
-        statusText =
-          "Rechazado";
-
+      statusText = "Rechazado";
 
       // -------------------------------------------------
       // Volver a confirmar
       // -------------------------------------------------
+    } else if (subject.Estado === "Volver a confirmar") {
+      statusBadgeClass = "bg-amber-500/10 text-amber-400 border-amber-500/20";
 
-      } else if (
+      statusIcon = "fa-triangle-exclamation";
 
-        subject.Estado ===
-        "Volver a confirmar"
+      statusText = "Reconfirmar";
+    }
 
-      ) {
+    // -------------------------------------------------
+    // Fotografía principal
+    // -------------------------------------------------
 
+    const coverPhoto =
+      subject.Fotos && subject.Fotos.length > 0
+        ? subject.Fotos[0]
+        : "https://placehold.co/150x150/0f172a/334155?text=Sin+Foto";
 
-        statusBadgeClass =
-          "bg-amber-500/10 text-amber-400 border-amber-500/20";
+    // -------------------------------------------------
+    // Contenido tarjeta
+    // -------------------------------------------------
 
-
-        statusIcon =
-          "fa-triangle-exclamation";
-
-
-        statusText =
-          "Reconfirmar";
-
-      }
-
-
-      // -------------------------------------------------
-      // Fotografía principal
-      // -------------------------------------------------
-
-      const coverPhoto =
-
-        subject.Fotos &&
-        subject.Fotos.length > 0
-
-          ? subject.Fotos[0]
-
-          : "https://placehold.co/150x150/0f172a/334155?text=Sin+Foto";
-
-
-      // -------------------------------------------------
-      // Contenido tarjeta
-      // -------------------------------------------------
-
-      card.innerHTML = `
+    card.innerHTML = `
 
         <div
           class="
@@ -1911,9 +1036,7 @@ function renderQueue() {
 
 
             ${
-              subject.Fotos &&
-              subject.Fotos.length > 1
-
+              subject.Fotos && subject.Fotos.length > 1
                 ? `
 
                   <span
@@ -1933,7 +1056,6 @@ function renderQueue() {
                   </span>
 
                 `
-
                 : ""
             }
 
@@ -1995,10 +1117,7 @@ function renderQueue() {
                 "
               ></i>
 
-              ${
-                subject.LugarConsulta ||
-                "Puesto General"
-              }
+              ${subject.LugarConsulta || "Puesto General"}
 
             </p>
 
@@ -2041,399 +1160,261 @@ function renderQueue() {
 
       `;
 
+    container.appendChild(card);
 
-      container.appendChild(
-        card
-      );
+    // -------------------------------------------------
+    // Abrir fotografía al tocarla
+    // -------------------------------------------------
 
+    const imageElement = card.querySelector("img");
 
-      // -------------------------------------------------
-      // Abrir fotografía al tocarla
-      // -------------------------------------------------
+    if (imageElement) {
+      imageElement.addEventListener("click", (event) => {
+        event.stopPropagation();
 
-      const imageElement =
-        card.querySelector("img");
+        openImagePreview(
+          coverPhoto,
 
-
-      if (imageElement) {
-
-
-        imageElement.addEventListener(
-          "click",
-          (event) => {
-
-
-            event.stopPropagation();
-
-
-            openImagePreview(
-
-              coverPhoto,
-
-              subject.Nombre
-
-            );
-
-          }
+          subject.Nombre,
         );
-
-      }
-
+      });
     }
-  );
-
+  });
 }
-
-
 
 // =====================================================
 // 09. DETALLE DEL REGISTRO
 // =====================================================
 
 function openSubjectDetail(recordId) {
+  currentRecordId = recordId;
 
-
-  currentRecordId =
-    recordId;
-
-
-  const subject =
-    subjectsQueue.find(
-
-      (item) =>
-        item.RecordId ===
-        recordId
-
-    );
-
+  const subject = subjectsQueue.find((item) => item.RecordId === recordId);
 
   if (!subject) {
-
     return;
-
   }
-
 
   // ---------------------------------------------------
   // Fotografías
   // ---------------------------------------------------
-
-  const galleryContainer =
-    document.getElementById(
-      "summary-photos-grid"
-    );
-
+  const galleryContainer = document.getElementById("summary-photos-grid");
 
   if (galleryContainer) {
+    galleryContainer.innerHTML = "";
 
+    // ==================================================
+    // FOTOS ENVIADAS POR EL CAPTURADOR
+    // Solo utilizamos las primeras 3
+    // ==================================================
 
-    galleryContainer.innerHTML =
-      "";
+    const fotosCaptura = (subject.Fotos || []).slice(0, 3);
 
+    // ==================================================
+    // FOTOS QUE REGRESAN DESDE SHAREPOINT
+    // Máximo 2
+    // ==================================================
 
-    const activeFotos =
-      subject.Fotos || [];
+    const fotosRespuesta = (subject.FotosRespuesta || []).slice(0, 2);
 
+    // ==================================================
+    // CREAR LOS 5 ESPACIOS
+    // ==================================================
 
-    activeFotos.forEach(
-      (foto, index) => {
+    for (let i = 0; i < 5; i++) {
+      const imgContainer = document.createElement("div");
 
+      imgContainer.className = `
+      aspect-square
+      rounded-lg
+      overflow-hidden
+      bg-slate-800
+      border
+      border-white/10
+      relative
+      flex
+      items-center
+      justify-center
+    `;
 
-        const imgContainer =
-          document.createElement(
-            "div"
-          );
+      // ------------------------------------------------
+      // ESPACIOS 1, 2 Y 3
+      // Fotos tomadas por el capturador
+      // ------------------------------------------------
 
-
-        imgContainer.className = `
-          aspect-square
-          rounded-lg
-          overflow-hidden
-          bg-slate-800
-          border
-          border-white/10
-          relative
-        `;
-
+      if (i < 3 && fotosCaptura[i]) {
+        const foto = fotosCaptura[i];
 
         imgContainer.innerHTML = `
 
-          <img
-            class="
-              w-full
-              h-full
-              object-cover
-            "
-            src="${foto}"
-            alt="Foto ${index + 1}"
-          >
+        <img
+          class="w-full h-full object-cover"
+          src="${foto}"
+          alt="Foto ${i + 1}"
+        >
 
-        `;
-
-
-        galleryContainer.appendChild(
-          imgContainer
-        );
-
-
-        const img =
-          imgContainer.querySelector(
-            "img"
-          );
-
-
-        if (img) {
-
-
-          img.addEventListener(
-            "click",
-            () => {
-
-
-              openImagePreview(
-
-                foto,
-
-                `Foto ${index + 1} - ${subject.Nombre}`
-
-              );
-
-            }
-          );
-
-        }
-
-      }
-    );
-
-
-    // Completar espacios vacíos hasta 5
-
-    for (
-      let i = activeFotos.length;
-      i < 5;
-      i++
-    ) {
-
-
-      const emptySlot =
-        document.createElement(
-          "div"
-        );
-
-
-      emptySlot.className = `
-        aspect-square
-        rounded-lg
-        bg-slate-900/50
-        border
-        border-dashed
-        border-slate-800
-        flex
-        items-center
-        justify-center
-        text-slate-700
-        text-[10px]
       `;
 
+        const img = imgContainer.querySelector("img");
 
-      emptySlot.innerHTML =
-        `<i class="fa-solid fa-camera"></i>`;
+        img.addEventListener("click", () => {
+          openImagePreview(foto, `Foto ${i + 1} - ${subject.Nombre}`);
+        });
 
+        // ------------------------------------------------
+        // ESPACIOS 4 Y 5
+        // Fotos recibidas desde SharePoint
+        // ------------------------------------------------
+      } else if (i >= 3 && fotosRespuesta[i - 3]) {
+        const foto = fotosRespuesta[i - 3];
 
-      galleryContainer.appendChild(
-        emptySlot
-      );
+        imgContainer.innerHTML = `
 
+        <img
+          class="w-full h-full object-cover"
+          src="${foto}"
+          alt="Respuesta ${i - 2}"
+        >
+
+        <span
+          class="
+            absolute
+            bottom-0
+            left-0
+            right-0
+            bg-amber-500/90
+            text-slate-950
+            text-[7px]
+            font-bold
+            py-0.5
+            text-center
+          "
+        >
+          RESPUESTA
+        </span>
+
+      `;
+
+        const img = imgContainer.querySelector("img");
+
+        img.addEventListener("click", () => {
+          openImagePreview(foto, `Respuesta ${i - 2} - ${subject.Nombre}`);
+        });
+
+        // ------------------------------------------------
+        // ESPACIO VACÍO
+        // ------------------------------------------------
+      } else {
+        const isResponseSlot = i >= 3;
+
+        imgContainer.className += " border-dashed border-slate-700";
+
+        imgContainer.innerHTML = `
+
+        <div
+          class="
+            text-center
+            text-slate-600
+          "
+        >
+
+          <i
+            class="
+              fa-solid
+              ${isResponseSlot ? "fa-cloud-arrow-down" : "fa-camera"}
+              text-sm
+            "
+          ></i>
+
+          ${isResponseSlot ? `<p class="text-[6px] mt-1">RESPUESTA</p>` : ""}
+
+        </div>
+
+      `;
+      }
+
+      galleryContainer.appendChild(imgContainer);
     }
-
   }
-
 
   // ---------------------------------------------------
   // Datos
   // ---------------------------------------------------
 
-  document.getElementById(
-    "summary-name"
-  ).innerText =
-    subject.Nombre;
+  document.getElementById("summary-name").innerText = subject.Nombre;
 
+  document.getElementById("summary-id").innerText = subject.Documento;
 
-  document.getElementById(
-    "summary-id"
-  ).innerText =
-    subject.Documento;
-
-
-  document.getElementById(
-    "summary-nationality"
-  ).innerText =
+  document.getElementById("summary-nationality").innerText =
     subject.Nacionalidad;
 
+  document.getElementById("summary-dob").innerText =
+    subject.FechaNacimiento || "No digitada";
 
-  document.getElementById(
-    "summary-dob"
-  ).innerText =
-    subject.FechaNacimiento ||
-    "No digitada";
-
-
-  document.getElementById(
-    "summary-location"
-  ).innerText =
-    subject.LugarConsulta ||
-    "Puesto General";
-
+  document.getElementById("summary-location").innerText =
+    subject.LugarConsulta || "Puesto General";
 
   // ---------------------------------------------------
   // Fecha y hora
   // ---------------------------------------------------
 
-  let timestampDisplay =
-    "-";
-
+  let timestampDisplay = "-";
 
   if (subject.FechaCreacion) {
-
-
     try {
+      const date = new Date(subject.FechaCreacion);
 
+      if (!isNaN(date.getTime())) {
+        timestampDisplay = date.toLocaleString("es-CR", {
+          dateStyle: "short",
 
-      const date =
-        new Date(
-          subject.FechaCreacion
-        );
-
-
-      if (
-        !isNaN(
-          date.getTime()
-        )
-      ) {
-
-
-        timestampDisplay =
-          date.toLocaleString(
-            "es-CR",
-            {
-
-              dateStyle:
-                "short",
-
-              timeStyle:
-                "medium"
-
-            }
-          );
-
-
+          timeStyle: "medium",
+        });
       } else {
-
-
-        timestampDisplay =
-          subject.FechaCreacion;
-
+        timestampDisplay = subject.FechaCreacion;
       }
-
-
     } catch (error) {
-
-
-      timestampDisplay =
-        subject.FechaCreacion;
-
+      timestampDisplay = subject.FechaCreacion;
     }
-
   }
 
-
-  document.getElementById(
-    "summary-timestamp"
-  ).innerText =
-    timestampDisplay;
-
+  document.getElementById("summary-timestamp").innerText = timestampDisplay;
 
   // Mostrar estado
 
   updateStatusVisuals(
-
     subject.Estado,
 
-    subject.Comentario
-
+    subject.Comentario,
   );
 
-
-  goToScreen(
-    "screen-status"
-  );
-
+  goToScreen("screen-status");
 
   // ---------------------------------------------------
   // Si está pendiente consultar automáticamente
   // ---------------------------------------------------
 
-  if (
-    subject.Estado ===
-    "Pendiente"
-  ) {
-
-    startPolling(
-      subject.RecordId
-    );
-
+  if (subject.Estado === "Pendiente") {
+    startPolling(subject.RecordId);
   }
-
 }
-
-
 
 // =====================================================
 // 10. ESTADOS VISUALES
 // =====================================================
 
-function updateStatusVisuals(
-  status,
-  comment = ""
-) {
+function updateStatusVisuals(status, comment = "") {
+  const screen = document.getElementById("screen-status");
 
+  const iconContainer = document.getElementById("status-icon-container");
 
-  const screen =
-    document.getElementById(
-      "screen-status"
-    );
+  const icon = document.getElementById("status-icon");
 
+  const title = document.getElementById("status-title");
 
-  const iconContainer =
-    document.getElementById(
-      "status-icon-container"
-    );
+  const message = document.getElementById("status-message");
 
-
-  const icon =
-    document.getElementById(
-      "status-icon"
-    );
-
-
-  const title =
-    document.getElementById(
-      "status-title"
-    );
-
-
-  const message =
-    document.getElementById(
-      "status-message"
-    );
-
-
-  const waitIndicator =
-    document.getElementById(
-      "wait-indicator"
-    );
-
+  const waitIndicator = document.getElementById("wait-indicator");
 
   if (
     !screen ||
@@ -2443,11 +1424,8 @@ function updateStatusVisuals(
     !message ||
     !waitIndicator
   ) {
-
     return;
-
   }
-
 
   // Clase base
 
@@ -2462,21 +1440,12 @@ function updateStatusVisuals(
     duration-500
   `;
 
-
   // ---------------------------------------------------
   // PENDIENTE
   // ---------------------------------------------------
 
-  if (
-    status ===
-    "Pendiente"
-  ) {
-
-
-    screen.classList.add(
-      "bg-slate-900"
-    );
-
+  if (status === "Pendiente") {
+    screen.classList.add("bg-slate-900");
 
     iconContainer.className = `
       w-24
@@ -2493,40 +1462,20 @@ function updateStatusVisuals(
       border-white/10
     `;
 
+    icon.className = "fa-solid fa-arrows-spin animate-spin text-sky-400";
 
-    icon.className =
-      "fa-solid fa-arrows-spin animate-spin text-sky-400";
-
-
-    title.innerText =
-      "Verificando Datos...";
-
+    title.innerText = "Verificando Datos...";
 
     message.innerText =
       "La oficina de control está revisando el perfil en tiempo real. Manténgase a la espera.";
 
+    waitIndicator.classList.remove("hidden");
 
-    waitIndicator.classList.remove(
-      "hidden"
-    );
-
-
-  // ---------------------------------------------------
-  // APROBADO
-  // ---------------------------------------------------
-
-  } else if (
-
-    status ===
-    "Aprobado"
-
-  ) {
-
-
-    screen.classList.add(
-      "bg-emerald-950/95"
-    );
-
+    // ---------------------------------------------------
+    // APROBADO
+    // ---------------------------------------------------
+  } else if (status === "Aprobado") {
+    screen.classList.add("bg-emerald-950/95");
 
     iconContainer.className = `
       w-24
@@ -2544,43 +1493,19 @@ function updateStatusVisuals(
       animate-bounce
     `;
 
+    icon.className = "fa-solid fa-circle-check text-slate-950";
 
-    icon.className =
-      "fa-solid fa-circle-check text-slate-950";
+    title.innerText = "¡SIN EXPEDIENTE!";
 
+    message.innerText = comment || "LA PERSONA NO PRESENTA EXPEDIENTE.";
 
-    title.innerText =
-      "¡SIN EXPEDIENTE!";
+    waitIndicator.classList.add("hidden");
 
-
-    message.innerText =
-
-      comment ||
-
-      "LA PERSONA NO PRESENTA EXPEDIENTE.";
-
-
-    waitIndicator.classList.add(
-      "hidden"
-    );
-
-
-  // ---------------------------------------------------
-  // RECHAZADO
-  // ---------------------------------------------------
-
-  } else if (
-
-    status ===
-    "Rechazado"
-
-  ) {
-
-
-    screen.classList.add(
-      "bg-red-950/95"
-    );
-
+    // ---------------------------------------------------
+    // RECHAZADO
+    // ---------------------------------------------------
+  } else if (status === "Rechazado") {
+    screen.classList.add("bg-red-950/95");
 
     iconContainer.className = `
       w-24
@@ -2597,44 +1522,21 @@ function updateStatusVisuals(
       border-red-400
     `;
 
+    icon.className = "fa-solid fa-circle-xmark text-white";
 
-    icon.className =
-      "fa-solid fa-circle-xmark text-white";
+    title.innerText = "CON PENDIENTES";
 
+    message.innerText = `Atención: Persona con pendientes. Motivo: "${
+      comment || "Fallo en la validación de credenciales."
+    }"`;
 
-    title.innerText =
-      "CON PENDIENTES";
+    waitIndicator.classList.add("hidden");
 
-
-    message.innerText =
-
-      `Atención: Persona con pendientes. Motivo: "${
-        comment ||
-        "Fallo en la validación de credenciales."
-      }"`;
-
-
-    waitIndicator.classList.add(
-      "hidden"
-    );
-
-
-  // ---------------------------------------------------
-  // VOLVER A CONFIRMAR
-  // ---------------------------------------------------
-
-  } else if (
-
-    status ===
-    "Volver a confirmar"
-
-  ) {
-
-
-    screen.classList.add(
-      "bg-amber-950/95"
-    );
-
+    // ---------------------------------------------------
+    // VOLVER A CONFIRMAR
+    // ---------------------------------------------------
+  } else if (status === "Volver a confirmar") {
+    screen.classList.add("bg-amber-950/95");
 
     iconContainer.className = `
       w-24
@@ -2651,572 +1553,328 @@ function updateStatusVisuals(
       border-amber-400
     `;
 
+    icon.className = "fa-solid fa-triangle-exclamation text-slate-950";
 
-    icon.className =
-      "fa-solid fa-triangle-exclamation text-slate-950";
+    title.innerText = "RECONFIRMAR DATOS";
 
+    message.innerText = `Se requiere volver a verificar o tomar la foto. Motivo: "${
+      comment || "Revisar datos enviados."
+    }"`;
 
-    title.innerText =
-      "RECONFIRMAR DATOS";
-
-
-    message.innerText =
-
-      `Se requiere volver a verificar o tomar la foto. Motivo: "${
-        comment ||
-        "Revisar datos enviados."
-      }"`;
-
-
-    waitIndicator.classList.add(
-      "hidden"
-    );
-
+    waitIndicator.classList.add("hidden");
   }
-
 }
-
-
 
 // =====================================================
 // 11. ACTUALIZAR ESTADO DEL REGISTRO
 // =====================================================
 
-function updateSubjectStatus(
-  recordId,
-  estado,
-  comentario
-) {
+function updateSubjectStatus(recordId, estado, comentario) {
+  let changed = false;
 
+  subjectsQueue = subjectsQueue.map((subject) => {
+    if (subject.RecordId === recordId && subject.Estado !== estado) {
+      changed = true;
 
-  let changed =
-    false;
+      return {
+        ...subject,
 
+        Estado: estado,
 
-  subjectsQueue =
-    subjectsQueue.map(
-      (subject) => {
+        Comentario: comentario || "",
+      };
+    }
 
-
-        if (
-
-          subject.RecordId ===
-            recordId &&
-
-          subject.Estado !==
-            estado
-
-        ) {
-
-
-          changed =
-            true;
-
-
-          return {
-
-            ...subject,
-
-            Estado:
-              estado,
-
-            Comentario:
-              comentario || ""
-
-          };
-
-        }
-
-
-        return subject;
-
-      }
-    );
-
+    return subject;
+  });
 
   if (!changed) {
-
     return false;
-
   }
-
 
   // Guardar actualización
 
   localStorage.setItem(
-
     "subjects_queue",
 
-    JSON.stringify(
-      subjectsQueue
-    )
-
+    JSON.stringify(subjectsQueue),
   );
-
 
   updateBadge();
 
   renderQueue();
-
 
   // ---------------------------------------------------
   // Si el usuario está viendo este registro,
   // actualizar la pantalla inmediatamente
   // ---------------------------------------------------
 
-  if (
-    currentRecordId ===
-    recordId
-  ) {
-
-
+  if (currentRecordId === recordId) {
     updateStatusVisuals(
-
       estado,
 
-      comentario || ""
-
+      comentario || "",
     );
 
-
     showToast(
-
       "Estado Actualizado",
 
       `El registro ha sido: ${estado}`,
 
-      false
-
+      false,
     );
-
   }
 
-
   return true;
-
 }
-
-
 
 // =====================================================
 // 12. CONSULTAR ESTADO EN POWER AUTOMATE
 // =====================================================
 
-function fetchStatusForRecord(
-  recordId
-) {
-
-
+function fetchStatusForRecord(recordId) {
   if (!statusUrl) {
-
     return;
-
   }
 
+  fetch(statusUrl, {
+    method: "POST",
 
-  fetch(
-    statusUrl,
-    {
+    headers: {
+      "Content-Type": "application/json",
 
+      Accept: "application/json",
+    },
 
-      method:
-        "POST",
-
-
-      headers: {
-
-        "Content-Type":
-          "application/json",
-
-        "Accept":
-          "application/json"
-
-      },
-
-
-      body:
-        JSON.stringify({
-
-          RecordId:
-            recordId
-
-        })
-
-    }
-  )
-
-
-    .then(
-      (response) => {
-
-
-        if (response.ok) {
-
-          return response.json();
-
-        }
-
-
-        return null;
-
+    body: JSON.stringify({
+      RecordId: recordId,
+    }),
+  })
+    .then((response) => {
+      if (response.ok) {
+        return response.json();
       }
-    )
 
+      return null;
+    })
 
-    .then(
-      (data) => {
+    .then((data) => {
+      if (data && data.Estado) {
+        updateSubjectStatus(
+          recordId,
 
+          data.Estado,
 
-        if (
-
-          data &&
-
-          data.Estado
-
-        ) {
-
-
-          updateSubjectStatus(
-
-            recordId,
-
-            data.Estado,
-
-            data.Comentario || ""
-
-          );
-
-        }
-
-      }
-    )
-
-
-    .catch(
-      () => {
-
-        console.log(
-          "Esperando actualización central..."
+          data.Comentario || "",
         );
-
       }
-    );
+      if (Array.isArray(data.FotosRespuesta)) {
+        updateResponsePhotos(recordId, data.FotosRespuesta);
+      }
+    })
 
+    .catch(() => {
+      console.log("Esperando actualización central...");
+    });
 }
 
+function updateResponsePhotos(recordId, fotos) {
+  subjectsQueue = subjectsQueue.map((subject) => {
+    if (subject.RecordId === recordId) {
+      return {
+        ...subject,
+        FotosRespuesta: fotos.slice(0, 2),
+      };
+    }
 
+    return subject;
+  });
+
+  localStorage.setItem("subjects_queue", JSON.stringify(subjectsQueue));
+
+  if (currentRecordId === recordId) {
+    showResponsePhotos(fotos);
+  }
+}
+
+function showResponsePhotos(fotos) {
+  for (let i = 3; i < 5; i++) {
+    const preview = document.getElementById(`slot-preview-${i}`);
+
+    const empty = document.getElementById(`slot-empty-${i}`);
+
+    if (preview) {
+      preview.src = "";
+
+      preview.classList.add("hidden");
+    }
+
+    if (empty) {
+      empty.classList.remove("hidden");
+    }
+  }
+
+  fotos.slice(0, 2).forEach((foto, index) => {
+    const slotIndex = index + 3;
+
+    const preview = document.getElementById(`slot-preview-${slotIndex}`);
+
+    const empty = document.getElementById(`slot-empty-${slotIndex}`);
+
+    if (preview) {
+      preview.src = foto;
+
+      preview.classList.remove("hidden");
+    }
+
+    if (empty) {
+      empty.classList.add("hidden");
+    }
+  });
+}
 
 // =====================================================
 // 13. POLLING DE LA COLA
 // =====================================================
 
 function startQueuePolling() {
-
-
   stopQueuePolling();
 
-
   if (!statusUrl) {
-
     return;
-
   }
 
-
-  queuePollingInterval =
-    setInterval(
-      () => {
-
-
-        const pendingRecords =
-          subjectsQueue.filter(
-
-            (subject) =>
-
-              subject.Estado ===
-                "Pendiente" ||
-
-              subject.Estado === 
-                "Volver a confirmar" ||
-
-              subject.Estado ===
-                "Rechazado"  || 
-              subject.Estado ===
-                "Aprobado"
-
-          );
-
-
-        pendingRecords.forEach(
-          (record) => {
-
-
-            fetchStatusForRecord(
-              record.RecordId
-            );
-
-          }
-        );
-
-
-      },
-      5000
+  queuePollingInterval = setInterval(() => {
+    const pendingRecords = subjectsQueue.filter(
+      (subject) =>
+        subject.Estado === "Pendiente" ||
+        subject.Estado === "Volver a confirmar" ||
+        subject.Estado === "Rechazado" ||
+        subject.Estado === "Aprobado",
     );
 
+    pendingRecords.forEach((record) => {
+      fetchStatusForRecord(record.RecordId);
+    });
+  }, 5000);
 }
-
-
 
 // -----------------------------------------------------
 // Detener polling de cola
 // -----------------------------------------------------
 
 function stopQueuePolling() {
+  if (queuePollingInterval) {
+    clearInterval(queuePollingInterval);
 
-
-  if (
-    queuePollingInterval
-  ) {
-
-
-    clearInterval(
-      queuePollingInterval
-    );
-
-
-    queuePollingInterval =
-      null;
-
+    queuePollingInterval = null;
   }
-
 }
-
-
 
 // =====================================================
 // 14. POLLING DE UN REGISTRO INDIVIDUAL
 // =====================================================
 
-function startPolling(
-  recordId
-) {
-
-
+function startPolling(recordId) {
   stopPolling();
 
-
   if (!statusUrl) {
-
     return;
-
   }
 
+  pollingInterval = setInterval(() => {
+    fetchStatusForRecord(recordId);
 
-  pollingInterval =
-    setInterval(
-      () => {
+    const subject = subjectsQueue.find((item) => item.RecordId === recordId);
 
+    // Detener cuando ya no esté pendiente
 
-        fetchStatusForRecord(
-          recordId
-        );
-
-
-        const subject =
-          subjectsQueue.find(
-
-            (item) =>
-              item.RecordId ===
-              recordId
-
-          );
-
-
-        // Detener cuando ya no esté pendiente
-
-        if (
-
-          !subject ||
-
-          subject.Estado !==
-            "Pendiente"
-
-        ) {
-
-          stopPolling();
-
-        }
-
-
-      },
-      1000
-    );
-
+    if (!subject || subject.Estado !== "Pendiente") {
+      stopPolling();
+    }
+  }, 1000);
 }
-
-
 
 // -----------------------------------------------------
 // Detener polling individual
 // -----------------------------------------------------
 
 function stopPolling() {
+  if (pollingInterval) {
+    clearInterval(pollingInterval);
 
-
-  if (
-    pollingInterval
-  ) {
-
-
-    clearInterval(
-      pollingInterval
-    );
-
-
-    pollingInterval =
-      null;
-
+    pollingInterval = null;
   }
-
 }
-
-
 
 // =====================================================
 // 15. LIMPIAR HISTORIAL LOCAL
 // =====================================================
 
 function clearQueueHistory() {
-
-
-  const confirmed =
-    confirm(
-
-      "¿Limpiar todo el historial de capturas de hoy en este dispositivo?"
-
-    );
-
+  const confirmed = confirm(
+    "¿Limpiar todo el historial de capturas de hoy en este dispositivo?",
+  );
 
   if (!confirmed) {
-
     return;
-
   }
-
 
   stopPolling();
 
   stopQueuePolling();
 
+  subjectsQueue = [];
 
-  subjectsQueue =
-    [];
-
-
-  localStorage.removeItem(
-    "subjects_queue"
-  );
-
+  localStorage.removeItem("subjects_queue");
 
   updateBadge();
 
   renderQueue();
 
-
   showToast(
-
     "Historial Limpio",
 
     "Se borró la cola local de este dispositivo.",
 
-    false
-
+    false,
   );
-
 }
-
-
 
 // =====================================================
 // 16. VISTA AMPLIADA DE FOTOGRAFÍAS
 // =====================================================
 
-function openImagePreview(
-  src,
-  caption = "Imagen ampliada"
-) {
+function openImagePreview(src, caption = "Imagen ampliada") {
+  const preview = document.getElementById("image-preview-large");
 
+  const captionElement = document.getElementById("image-preview-caption");
 
-  const preview =
-    document.getElementById(
-      "image-preview-large"
-    );
+  const modal = document.getElementById("image-preview-modal");
 
-
-  const captionElement =
-    document.getElementById(
-      "image-preview-caption"
-    );
-
-
-  const modal =
-    document.getElementById(
-      "image-preview-modal"
-    );
-
-
-  if (
-    !preview ||
-    !captionElement ||
-    !modal
-  ) {
-
+  if (!preview || !captionElement || !modal) {
     return;
-
   }
 
+  preview.src = src;
 
-  preview.src =
-    src;
+  preview.alt = caption;
 
+  captionElement.innerText = caption;
 
-  preview.alt =
-    caption;
-
-
-  captionElement.innerText =
-    caption;
-
-
-  modal.classList.remove(
-    "hidden"
-  );
-
+  modal.classList.remove("hidden");
 }
-
-
 
 // -----------------------------------------------------
 // Cerrar fotografía ampliada
 // -----------------------------------------------------
 
 function closeImagePreview() {
-
-
-  const modal =
-    document.getElementById(
-      "image-preview-modal"
-    );
-
+  const modal = document.getElementById("image-preview-modal");
 
   if (modal) {
-
-    modal.classList.add(
-      "hidden"
-    );
-
+    modal.classList.add("hidden");
   }
-
 }
 
 // =====================================================
@@ -3224,36 +1882,15 @@ function closeImagePreview() {
 // =====================================================
 
 function updateClock() {
-  const clock =
-    document.getElementById(
-      "live-clock"
-    );
+  const clock = document.getElementById("live-clock");
   if (!clock) {
     return;
   }
-  const now =
-    new Date();
-  const hours =
-    String(
-      now.getHours()
-    ).padStart(
-      2,
-      "0"
-    );
-  const minutes =
-    String(
-      now.getMinutes()
-    ).padStart(
-      2,
-      "0"
-    );
-  clock.innerText =
-    `${hours}:${minutes}`;
+  const now = new Date();
+  const hours = String(now.getHours()).padStart(2, "0");
+  const minutes = String(now.getMinutes()).padStart(2, "0");
+  clock.innerText = `${hours}:${minutes}`;
 }
 
-
 // Actualizar reloj cada segundo
-setInterval(
-  updateClock,
-  1000
-);
+setInterval(updateClock, 1000);
