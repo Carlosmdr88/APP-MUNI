@@ -78,7 +78,7 @@
       .stage {
         position: relative;
         width: min(920px, 94vw);
-        height: 530px;
+        height: 580px;
         margin-top: 25px;
         overflow: hidden;
         border: 1px solid #4abfff66;
@@ -277,43 +277,43 @@
           width: 195px;
           height: 195px;
         }
-        footer {
-          position: fixed;
-          bottom: 0;
-          left: 0;
-          right: 0;
+      }
+      footer {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
 
-          height: 65px;
-          z-index: 99999;
+        height: 65px;
+        z-index: 99999;
 
-          display: flex;
-          flex-direction: column;
-          justify-content: center;
-          align-items: center;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
 
-          text-align: center;
+        text-align: center;
 
-          background: rgba(3, 7, 17, 0.95);
-          border-top: 1px solid rgba(75, 197, 255, 0.4);
-          backdrop-filter: blur(8px);
+        background: rgba(3, 7, 17, 0.95);
+        border-top: 1px solid rgba(75, 197, 255, 0.4);
+        backdrop-filter: blur(8px);
 
-          color: #6f91a8;
-          font-size: 12px;
-          letter-spacing: 1px;
-        }
+        color: #6f91a8;
+        font-size: 12px;
+        letter-spacing: 1px;
+      }
 
-        footer p {
-          margin: 2px 0;
-        }
+      footer p {
+        margin: 2px 0;
+      }
 
-        footer a {
-          color: #4bc5ff;
-          text-decoration: none;
-        }
+      footer a {
+        color: #4bc5ff;
+        text-decoration: none;
+      }
 
-        footer a:hover {
-          text-shadow: 0 0 10px #4bc5ff;
-        }
+      footer a:hover {
+        text-shadow: 0 0 10px #4bc5ff;
       }
     </style>
   </head>
@@ -333,16 +333,43 @@
           <h3>PANEL DE VISUALIZACIÓN</h3>
           <div class="grid">
             <div class="item">
-              <span>TÍTULO DEL GRÁFICO 1</span
-              ><button class="btn" onclick="abrir('URL_1')">GRÁFICO 1</button>
+              <span>PARTES Y DECOMISOS DE DROGRAS</span
+              ><button
+                class="btn"
+                onclick="
+                  abrir(
+                    'https://app.powerbi.com/view?r=eyJrIjoiMTNmMmE4MDUtZDk2Mi00MjgzLTk0OGQtODYxZTRhNjZlYzdjIiwidCI6IjdlYzQwMjI5LWFkMjEtNDY2NC1hZGU0LWJhZmU0YjA3NzZjYyJ9',
+                  )
+                "
+              >
+                PARTES_DECOMISOS
+              </button>
             </div>
             <div class="item">
-              <span>TÍTULO DEL GRÁFICO 2</span
-              ><button class="btn" onclick="abrir('URL_2')">GRÁFICO 2</button>
+              <span>ESTADISTICAS DELICTIVAS ANUAL</span
+              ><button
+                class="btn"
+                onclick="
+                  abrir(
+                    'https://app.powerbi.com/view?r=eyJrIjoiMWRmZTA5MDYtODE0NS00ZmZhLTkzMjEtNGI4NTEyZTExZDdlIiwidCI6IjdlYzQwMjI5LWFkMjEtNDY2NC1hZGU0LWJhZmU0YjA3NzZjYyJ9',
+                  )
+                "
+              >
+                ESTADISTICAS DELICTIVAS
+              </button>
             </div>
             <div class="item">
-              <span>TÍTULO DEL GRÁFICO 3</span
-              ><button class="btn" onclick="abrir('URL_3')">GRÁFICO 3</button>
+              <span>DOCUMENTACION SEMIP</span
+              ><button
+                class="btn"
+                onclick="
+                  abrir(
+                    'https://app.powerbi.com/view?r=eyJrIjoiZjg4N2ViYTctYTU5Yi00YjUzLWFmNzItNTM3NDU0MjhmN2Q5IiwidCI6IjdlYzQwMjI5LWFkMjEtNDY2NC1hZGU0LWJhZmU0YjA3NzZjYyJ9',
+                  )
+                "
+              >
+                OFICIOS Y FISCALIZACIONES
+              </button>
             </div>
             <div class="item">
               <span>TÍTULO DEL GRÁFICO 4</span
@@ -355,6 +382,10 @@
             <div class="item">
               <span>TÍTULO DEL GRÁFICO 6</span
               ><button class="btn" onclick="abrir('URL_6')">GRÁFICO 6</button>
+            </div>
+            <div class="item">
+              <span>TÍTULO DEL GRÁFICO 7</span
+              ><button class="btn" onclick="abrir('URL_6')">GRÁFICO 7</button>
             </div>
           </div>
           <button class="btn exit" onclick="salir()">SALIR❌</button>

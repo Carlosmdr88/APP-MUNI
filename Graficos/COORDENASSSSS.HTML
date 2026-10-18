@@ -1,0 +1,641 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Separar coordenadas</title>
+    <style>
+      select {
+        width: 100%;
+        padding: 12px;
+        font: inherit;
+        border: 1px solid #b9cbd6;
+        border-radius: 10px;
+      }
+      button:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+      }
+      #success {
+        color: #096b5f;
+        line-height: 1.5;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        padding: 24px;
+        background: #f0f5f8;
+        color: #183044;
+        font-family: system-ui, sans-serif;
+      }
+      main {
+        width: 100%;
+        max-width: 560px;
+        padding: clamp(24px, 6vw, 42px);
+        background: white;
+        border: 1px solid #dde7ed;
+        border-radius: 24px;
+        box-shadow: 0 16px 50px #1830440d;
+      }
+      h1 {
+        margin: 0 0 12px;
+        font-size: 28px;
+      }
+      .intro {
+        color: #587080;
+        line-height: 1.6;
+        margin-bottom: 28px;
+      }
+      label {
+        display: block;
+        font-weight: 650;
+        margin: 22px 0 9px;
+      }
+      input {
+        width: 100%;
+        padding: 14px;
+        border: 1px solid #b9cbd6;
+        border-radius: 10px;
+        font: inherit;
+        color: inherit;
+      }
+      input:focus {
+        outline: 3px solid #c5e9e5;
+        border-color: #168576;
+      }
+      .hint {
+        font-size: 13px;
+        color: #587080;
+        line-height: 1.6;
+        overflow-wrap: anywhere;
+      }
+      .result {
+        margin-top: 28px;
+        padding: 22px;
+        border-radius: 14px;
+        background: #edf8f5;
+      }
+      h2 {
+        font-size: 15px;
+        margin: 0 0 18px;
+        letter-spacing: 0.04em;
+      }
+      .row {
+        display: flex;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 14px;
+      }
+      output {
+        font-size: 22px;
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+        color: #096b5f;
+      }
+      #error {
+        color: #a12929;
+        font-size: 14px;
+        line-height: 1.5;
+      }
+      #error:empty {
+        display: none;
+      }
+      button {
+        margin-top: 22px;
+        border: 1px solid #b9cbd6;
+        background: white;
+        color: #183044;
+        padding: 11px 18px;
+        border-radius: 10px;
+        font: inherit;
+        cursor: pointer;
+      }
+      button:hover {
+        background: #f0f5f8;
+      }
+      #save {
+        background: #096b5f;
+        color: white;
+        border-color: #096b5f;
+        margin-right: 10px;
+      }
+      #save:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Separar coordenadas</h1>
+      <p class="intro">
+        Pegue su coordenada para ver la latitud y la longitud automáticamente.
+      </p>
+      <button type="button" id="open">1. Seleccionar Excel</button>
+      <p class="hint" id="fileStatus" role="status">
+        Seleccione un archivo .xlsx con ID, LATITUD y LONGITUD en A1, B1 y C1.
+      </p>
+      <p class="hint">Cierre el archivo en Excel antes de guardar aquí.</p>
+      <label for="sheet">Hoja:</label
+      ><select id="sheet" disabled></select>
+      <label for="id">2. ID:</label>
+      <input
+        id="id"
+        type="text"
+        placeholder="Ingrese el ID"
+        autocomplete="off"
+      />
+      <label for="coordinate">PEGUE AQUÍ LA COORDENADA:</label>
+      <input
+        id="coordinate"
+        type="text"
+        placeholder="9.937394994743201, -84.08252053976285"
+        aria-describedby="hint error"
+        autocomplete="off"
+        spellcheck="false"
+      />
+      <p class="hint" id="hint">
+        Formato: latitud, longitud. Use punto para los decimales.<br />Ejemplo:
+        9.937394994743201, -84.08252053976285
+      </p>
+      <p id="error" role="alert"></p>
+      <section class="result" aria-live="polite" aria-atomic="true">
+        <h2>SUS COORDENADAS SON:</h2>
+        <div class="row">
+          <span>LATITUD:</span><output id="latitude">—</output>
+        </div>
+        <div class="row">
+          <span>LONGITUD:</span><output id="longitude">—</output>
+        </div>
+      </section>
+      <p class="hint">
+        Resultados redondeados a cinco decimales. Funciona sin conexión.
+      </p>
+      <button type="button" id="save" disabled>3. Guardar en Excel</button>
+      <button type="button" id="clear">Limpiar</button>
+      <p class="hint">
+        Cada guardado agrega una fila al archivo seleccionado. Los ID repetidos
+        no se guardan.
+      </p>
+      <p id="success" role="status"></p>
+    </main>
+    <script>
+      function zip(files) {
+        const encoder = new TextEncoder();
+        const parts = [],
+          directory = [];
+        let offset = 0;
+        function header(size) {
+          const bytes = new Uint8Array(size);
+          return { bytes, view: new DataView(bytes.buffer) };
+        }
+        for (const [path, content] of Object.entries(files)) {
+          const name = encoder.encode(path),
+            data =
+              typeof content === "string" ? encoder.encode(content) : content;
+          let crc = 0xffffffff;
+          for (const byte of data) {
+            crc ^= byte;
+            for (let i = 0; i < 8; i++)
+              crc = (crc >>> 1) ^ (crc & 1 ? 0xedb88320 : 0);
+          }
+          crc = (crc ^ 0xffffffff) >>> 0;
+          const local = header(30);
+          local.view.setUint32(0, 0x04034b50, true);
+          local.view.setUint16(4, 20, true);
+          local.view.setUint16(12, 33, true);
+          local.view.setUint32(14, crc, true);
+          local.view.setUint32(18, data.length, true);
+          local.view.setUint32(22, data.length, true);
+          local.view.setUint16(26, name.length, true);
+          parts.push(local.bytes, name, data);
+          const central = header(46);
+          central.view.setUint32(0, 0x02014b50, true);
+          central.view.setUint16(4, 20, true);
+          central.view.setUint16(6, 20, true);
+          central.view.setUint16(14, 33, true);
+          central.view.setUint32(16, crc, true);
+          central.view.setUint32(20, data.length, true);
+          central.view.setUint32(24, data.length, true);
+          central.view.setUint16(28, name.length, true);
+          central.view.setUint32(42, offset, true);
+          directory.push(central.bytes, name);
+          offset += 30 + name.length + data.length;
+        }
+        const end = header(22);
+        end.view.setUint32(0, 0x06054b50, true);
+        end.view.setUint16(8, Object.keys(files).length, true);
+        end.view.setUint16(10, Object.keys(files).length, true);
+        end.view.setUint32(
+          12,
+          directory.reduce((sum, item) => sum + item.length, 0),
+          true,
+        );
+        end.view.setUint32(16, offset, true);
+        return new Blob([...parts, ...directory, end.bytes], {
+          type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        });
+      }
+      const $ = (id) => document.getElementById(id);
+      const ns = "http://schemas.openxmlformats.org/spreadsheetml/2006/main";
+      let handle = null,
+        book = null,
+        busy = false;
+      const nodes = (doc, name) =>
+        Array.from(doc.getElementsByTagNameNS("*", name));
+      const key = (value) =>
+        String(value).trim().normalize("NFKC").toUpperCase();
+      function parseXml(bytes) {
+        const doc = new DOMParser().parseFromString(
+          new TextDecoder().decode(bytes),
+          "application/xml",
+        );
+        if (nodes(doc, "parsererror").length)
+          throw Error("El Excel contiene datos que no se pudieron leer.");
+        return doc;
+      }
+      async function unzip(buffer) {
+        const bytes = new Uint8Array(buffer),
+          view = new DataView(buffer),
+          files = {};
+        let end = bytes.length - 22;
+        while (
+          end >= Math.max(0, bytes.length - 65557) &&
+          view.getUint32(end, true) !== 0x06054b50
+        )
+          end--;
+        if (end < 0 || view.getUint32(end, true) !== 0x06054b50)
+          throw Error(
+            "Seleccione un archivo Excel .xlsx válido, sin contraseña.",
+          );
+        let pos = view.getUint32(end + 16, true),
+          total = 0;
+        for (let i = 0; i < view.getUint16(end + 10, true); i++) {
+          if (view.getUint32(pos, true) !== 0x02014b50)
+            throw Error("El archivo Excel no es válido.");
+          const flags = view.getUint16(pos + 8, true),
+            method = view.getUint16(pos + 10, true);
+          const size = view.getUint32(pos + 20, true),
+            rawSize = view.getUint32(pos + 24, true);
+          const nameLength = view.getUint16(pos + 28, true),
+            local = view.getUint32(pos + 42, true);
+          const name = new TextDecoder().decode(
+            bytes.slice(pos + 46, pos + 46 + nameLength),
+          );
+          total += rawSize;
+          if (
+            flags & 1 ||
+            total > 100 * 1024 * 1024 ||
+            ![0, 8].includes(method)
+          )
+            throw Error(
+              "Este Excel está protegido, es demasiado grande o usa un formato no compatible.",
+            );
+          const start =
+            local +
+            30 +
+            view.getUint16(local + 26, true) +
+            view.getUint16(local + 28, true);
+          const data = bytes.slice(start, start + size);
+          files[name] =
+            method === 0
+              ? data
+              : new Uint8Array(
+                  await new Response(
+                    new Blob([data])
+                      .stream()
+                      .pipeThrough(new DecompressionStream("deflate-raw")),
+                  ).arrayBuffer(),
+                );
+          if (files[name].length !== rawSize)
+            throw Error("El archivo está incompleto.");
+          pos +=
+            46 +
+            nameLength +
+            view.getUint16(pos + 30, true) +
+            view.getUint16(pos + 32, true);
+        }
+        return files;
+      }
+      function cellText(cell, strings) {
+        if (!cell) return "";
+        if (cell.getAttribute("t") === "inlineStr")
+          return nodes(cell, "t")
+            .map((x) => x.textContent)
+            .join("");
+        const val = nodes(cell, "v")[0]?.textContent || "";
+        return cell.getAttribute("t") === "s"
+          ? strings[Number(val)] || ""
+          : val;
+      }
+      async function readBook(file) {
+        if (
+          !file.name.toLowerCase().endsWith(".xlsx") ||
+          file.size > 30 * 1024 * 1024
+        )
+          throw Error("Seleccione un .xlsx de hasta 30 MB.");
+        const bytes = await file.arrayBuffer(),
+          files = await unzip(bytes);
+        if (!files["xl/workbook.xml"] || !files["xl/_rels/workbook.xml.rels"])
+          throw Error("No se reconoce la estructura de este Excel.");
+        const workbook = parseXml(files["xl/workbook.xml"]);
+        const rels = nodes(
+          parseXml(files["xl/_rels/workbook.xml.rels"]),
+          "Relationship",
+        );
+        const strings = files["xl/sharedStrings.xml"]
+          ? nodes(parseXml(files["xl/sharedStrings.xml"]), "si").map((x) =>
+              nodes(x, "t")
+                .map((t) => t.textContent)
+                .join(""),
+            )
+          : [];
+        const sheets = [];
+        for (const info of nodes(workbook, "sheet")) {
+          const rel = rels.find(
+            (x) =>
+              x.getAttribute("Id") ===
+              info.getAttributeNS(
+                "http://schemas.openxmlformats.org/officeDocument/2006/relationships",
+                "id",
+              ),
+          );
+          if (!rel || rel.getAttribute("TargetMode") === "External") continue;
+          const target = rel.getAttribute("Target");
+          const path = new URL(
+            target,
+            "https://local/xl/workbook.xml",
+          ).pathname.slice(1);
+          if (!files[path]) continue;
+          const doc = parseXml(files[path]),
+            cells = nodes(doc, "c");
+          const headers = ["A1", "B1", "C1"].map((ref) =>
+            key(
+              cellText(
+                cells.find((c) => c.getAttribute("r") === ref),
+                strings,
+              ),
+            ),
+          );
+          if (headers.join("|") !== "ID|LATITUD|LONGITUD") continue;
+          const ids = new Set(
+            cells
+              .filter(
+                (c) =>
+                  /^A\d+$/.test(c.getAttribute("r")) &&
+                  c.getAttribute("r") !== "A1",
+              )
+              .map((c) => key(cellText(c, strings)))
+              .filter(Boolean),
+          );
+          sheets.push({ name: info.getAttribute("name"), path, doc, ids });
+        }
+        if (!sheets.length)
+          throw Error(
+            "No hay una hoja con ID, LATITUD y LONGITUD en A1, B1 y C1.",
+          );
+        return { files, sheets, bytes };
+      }
+      function selected() {
+        return book?.sheets.find((s) => s.path === $("sheet").value);
+      }
+      function coordinateValue() {
+        const match = $("coordinate")
+          .value.trim()
+          .match(
+            /^([+-]?(?:\d+(?:\.\d+)?|\.\d+))\s*,\s*([+-]?(?:\d+(?:\.\d+)?|\.\d+))$/,
+          );
+        if (!match) return null;
+        const lat = Number(match[1]),
+          lon = Number(match[2]);
+        return Number.isFinite(lat) &&
+          Number.isFinite(lon) &&
+          Math.abs(lat) <= 90 &&
+          Math.abs(lon) <= 180
+          ? { lat, lon }
+          : null;
+      }
+      function update() {
+        const coord = coordinateValue(),
+          id = key($("id").value),
+          sheet = selected();
+        $("latitude").textContent = coord
+          ? coord.lat.toFixed(5).replace(".", ",")
+          : "—";
+        $("longitude").textContent = coord
+          ? coord.lon.toFixed(5).replace(".", ",")
+          : "—";
+        $("error").textContent =
+          id && sheet?.ids.has(id)
+            ? "Este ID ya está registrado. Use otro. No se guardará."
+            : $("coordinate").value.trim() && !coord
+              ? "Ingrese una coordenada válida. Ejemplo: 9.93739, -84.08252. Latitud: -90 a 90; longitud: -180 a 180."
+              : "";
+        $("save").disabled =
+          busy || !sheet || !id || !coord || sheet.ids.has(id);
+        for (const el of ["open", "sheet", "id", "coordinate", "clear"])
+          $(el).disabled = busy || (el === "sheet" && !book);
+      }
+      function showBook(path) {
+        $("sheet").replaceChildren();
+        for (const sheet of book.sheets) {
+          const option = document.createElement("option");
+          option.value = sheet.path;
+          option.textContent = sheet.name;
+          $("sheet").append(option);
+        }
+        if (path && book.sheets.some((s) => s.path === path))
+          $("sheet").value = path;
+        $("fileStatus").textContent =
+          `${handle.name} · ${selected().ids.size} ID registrados en esta hoja.`;
+      }
+      function appendRecord(sheet, id, coord) {
+        const doc = sheet.doc,
+          data = nodes(doc, "sheetData")[0];
+        if (
+          !data ||
+          nodes(doc, "sheetProtection").length ||
+          nodes(doc, "tableParts").length ||
+          nodes(doc, "mergeCells").length
+        )
+          throw Error(
+            "Use una hoja sin protección, tablas ni celdas combinadas para agregar registros.",
+          );
+        const rows = nodes(data, "row");
+        const last = rows.reduce(
+          (max, row) => Math.max(max, Number(row.getAttribute("r")) || 0),
+          1,
+        );
+        const next = last + 1;
+        if (next > 1048576) throw Error("La hoja está llena.");
+        const row = doc.createElementNS(ns, "row");
+        row.setAttribute("r", next);
+        for (const [column, value] of [
+          ["A", id],
+          ["B", coord.lat],
+          ["C", coord.lon],
+        ]) {
+          const cell = doc.createElementNS(ns, "c");
+          cell.setAttribute("r", column + next);
+          if (column === "A") {
+            cell.setAttribute("t", "inlineStr");
+            const is = doc.createElementNS(ns, "is"),
+              t = doc.createElementNS(ns, "t");
+            t.textContent = value;
+            is.append(t);
+            cell.append(is);
+          } else {
+            const v = doc.createElementNS(ns, "v");
+            v.textContent = String(value);
+            cell.append(v);
+          }
+          row.append(cell);
+        }
+        data.append(row);
+        const dimension = nodes(doc, "dimension")[0];
+        if (dimension) {
+          const ref = dimension.getAttribute("ref") || "A1:C1";
+          const end = ref.split(":").pop();
+          const col = end.replace(/\d/g, "");
+          dimension.setAttribute(
+            "ref",
+            `${ref.includes(":") ? ref.split(":")[0] : "A1"}:${col.length > 1 || col > "C" ? col : "C"}${next}`,
+          );
+        }
+        const filter = nodes(doc, "autoFilter")[0];
+        if (filter)
+          filter.setAttribute(
+            "ref",
+            filter.getAttribute("ref").replace(/\d+$/, String(next)),
+          );
+        return new TextEncoder().encode(
+          new XMLSerializer().serializeToString(doc),
+        );
+      }
+      $("open").addEventListener("click", async () => {
+        if (!window.showOpenFilePicker) {
+          $("error").textContent =
+            "Abra este HTML en Microsoft Edge o Google Chrome para seleccionar y guardar en el mismo Excel.";
+          return;
+        }
+        busy = true;
+        update();
+        $("success").textContent = "";
+        try {
+          const [chosen] = await window.showOpenFilePicker({
+            multiple: false,
+            types: [
+              {
+                description: "Excel",
+                accept: {
+                  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":
+                    [".xlsx"],
+                },
+              },
+            ],
+          });
+          const loaded = await readBook(await chosen.getFile());
+          handle = chosen;
+          book = loaded;
+          showBook();
+        } catch (e) {
+          if (e.name !== "AbortError")
+            $("success").textContent = "No se abrió el archivo: " + e.message;
+        } finally {
+          busy = false;
+          update();
+        }
+      });
+      $("save").addEventListener("click", async () => {
+        if (busy || !handle || !selected()) return;
+        const coord = coordinateValue(),
+          id = $("id").value.trim(),
+          path = selected().path;
+        if (!coord || !id) return;
+        busy = true;
+        update();
+        $("success").textContent = "";
+        let writable;
+        try {
+          if (
+            (await handle.requestPermission({ mode: "readwrite" })) !==
+            "granted"
+          )
+            throw Error("Permita guardar cambios en el archivo seleccionado.");
+          const fresh = await readBook(await handle.getFile());
+          book = fresh;
+          showBook(path);
+          const sheet = book.sheets.find((s) => s.path === path);
+          if (!sheet)
+            throw Error(
+              "La hoja cambió. Seleccione la hoja e intente otra vez.",
+            );
+          if (sheet.ids.has(key(id)))
+            throw Error("Este ID ya está registrado. Use otro. No se guardó.");
+          const changed = appendRecord(sheet, id, coord);
+          const output = zip({ ...fresh.files, [path]: changed });
+          // Recheck the source immediately before obtaining the write stream.
+          const latest = new Uint8Array(
+              await (await handle.getFile()).arrayBuffer(),
+            ),
+            original = new Uint8Array(fresh.bytes);
+          if (
+            latest.length !== original.length ||
+            latest.some((v, i) => v !== original[i])
+          )
+            throw Error(
+              "El Excel cambió durante el guardado. Intente guardar otra vez.",
+            );
+          writable = await handle.createWritable();
+          await writable.write(output);
+          await writable.close();
+          writable = null;
+          book = await readBook(await handle.getFile());
+          showBook(path);
+          if (!selected().ids.has(key(id)))
+            throw Error(
+              "No se pudo verificar el registro. Vuelva a seleccionar el archivo.",
+            );
+          $("id").value = "";
+          $("coordinate").value = "";
+          $("success").textContent =
+            `ID ${id} guardado en ${handle.name}. Puede ingresar el siguiente.`;
+        } catch (e) {
+          if (writable) await writable.abort().catch(() => {});
+          $("success").textContent =
+            "No se completó el guardado: " +
+            e.message +
+            " Si el archivo está abierto en Excel, ciérrelo e intente de nuevo.";
+        } finally {
+          busy = false;
+          update();
+          $("id").focus();
+        }
+      });
+      for (const el of ["id", "coordinate"])
+        $(el).addEventListener("input", () => {
+          $("success").textContent = "";
+          update();
+        });
+      $("sheet").addEventListener("change", () => {
+        $("fileStatus").textContent =
+          `${handle.name} · ${selected().ids.size} ID registrados en esta hoja.`;
+        update();
+      });
+      $("clear").addEventListener("click", () => {
+        $("id").value = "";
+        $("coordinate").value = "";
+        $("success").textContent = "";
+        update();
+        $("id").focus();
+      });
+      update();
+    </script>
+  </body>
+</html>
