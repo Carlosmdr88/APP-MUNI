@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="es">
+  <meta charset="utf-8" /><meta
+    name="viewport"
+    content="width=device-width,initial-scale=1"
+  /><title>CENSO · Registro de personas</title
+  ><link rel="stylesheet" href="style.css" />
+  <body>
+    <aside>
+      <div class="brand">CENSO<small>GESTIÓN DE PERSONAS</small></div>
+      <nav>
+        <button class="active" data-page="consulta">
+          ◎ &nbsp; Nueva consulta</button
+        ><button data-page="personas">▤ &nbsp; Personas</button
+        ><button data-page="historial">◷ &nbsp; Historial</button>
+      </nav>
+      <footer>
+        ENTORNO DE DEMOSTRACIÓN<br />Acceso para personal autorizado<br /><span
+          style="color: #76b9ba"
+          >● Sesión de ejemplo</span
+        >
+      </footer>
+    </aside>
+    <main>
+      <header>
+        <span class="eyebrow">PANEL DE OPERACIONES</span>
+        <div class="profile">
+          <span class="avatar">OP</span
+          ><span
+            >Operador de prueba<br /><small>Acceso de demostración</small></span
+          ><button class="secondary" id="logout" style="padding: 7px">
+            Salir
+          </button>
+        </div>
+      </header>
+      <div class="intro">
+        <div>
+          <h1 id="title">Nueva consulta</h1>
+          <p id="subtitle">
+            Identificá un registro o agregá una nueva persona.
+          </p>
+        </div>
+        <span class="badge">● Prototipo interactivo</span>
+      </div>
+      <div class="notice">
+        Vista de diseño: no realiza reconocimiento facial ni autentica usuarios.
+        Usá únicamente datos ficticios; los registros se mantienen en memoria
+        hasta recargar.
+      </div>
+      <section id="consulta">
+        <div class="steps">
+          <span class="current"><b>1</b> Capturar foto</span
+          ><span><b>2</b> Revisar resultado</span
+          ><span><b>3</b> Registrar</span>
+        </div>
+        <div class="grid">
+          <article class="card">
+            <h2>Fotografía de consulta</h2>
+            <p class="sub">Ubicá el rostro de frente, con buena iluminación.</p>
+            <div class="camera">
+              <div class="oval">◎</div>
+              <span id="camHint">La fotografía aparecerá aquí</span
+              ><video id="video" playsinline autoplay muted hidden></video
+              ><img id="photo" alt="Fotografía seleccionada" hidden />
+            </div>
+            <div class="actions">
+              <button id="cameraBtn">Abrir cámara</button
+              ><button id="captureBtn" hidden>Tomar foto</button
+              ><button class="secondary" id="uploadBtn">Subir fotografía</button
+              ><input type="file" id="file" accept="image/*" hidden />
+            </div>
+            <button class="wide" id="searchBtn" disabled>
+              Buscar coincidencia · Demo
+            </button>
+            <p class="hint">La imagen no se envía a ningún servidor.</p>
+          </article>
+          <article class="card">
+            <h2>Resultado de la consulta</h2>
+            <p class="sub">Revisá el resultado antes de continuar.</p>
+            <div id="result">
+              <div class="empty">
+                <div class="symbol">⌕</div>
+                <strong style="margin-top: 18px"
+                  >Todo listo para consultar</strong
+                >
+                <p>
+                  Agregá una fotografía para comenzar o explorá los escenarios
+                  de ejemplo.
+                </p>
+              </div>
+            </div>
+            <div class="examples">
+              PROBAR UN ESCENARIO SIN FOTOGRAFÍA<br /><button
+                class="secondary"
+                id="match"
+              >
+                Ver posible coincidencia</button
+              ><button class="secondary" id="noMatch">
+                Ver sin coincidencias
+              </button>
+            </div>
+          </article>
+        </div>
+        <article class="card" id="register" hidden style="margin-top: 24px">
+          <h2>Registrar nueva persona</h2>
+          <p class="sub">
+            Primero comprobá su identificación para evitar duplicados.
+          </p>
+          <form id="form">
+            <div class="fields">
+              <label class="full"
+                >Nombre completo<input
+                  name="nombre"
+                  required
+                  maxlength="120"
+                  placeholder="Ej.: Persona de prueba" /></label
+              ><label
+                >Fecha de nacimiento<input
+                  name="fecha"
+                  type="date"
+                  required /></label
+              ><label
+                >Identificación<input
+                  name="identificacion"
+                  required
+                  maxlength="40"
+                  placeholder="Número de identificación" /></label
+              ><label
+                >Nacionalidad<input
+                  name="nacionalidad"
+                  required
+                  maxlength="60"
+                  placeholder="Ej.: Costarricense" /></label
+              ><label
+                >Motivo del registro<input
+                  name="motivo"
+                  required
+                  maxlength="160"
+                  placeholder="Indicá el motivo" /></label
+              ><label class="check full"
+                ><input type="checkbox" required />Confirmo que estoy usando
+                información ficticia para probar este prototipo.</label
+              >
+            </div>
+            <div class="actions" style="margin-top: 22px">
+              <button>Guardar registro de prueba</button
+              ><button type="button" class="secondary" id="cancel">
+                Cancelar
+              </button>
+            </div>
+          </form>
+        </article>
+      </section>
+      <section id="personas" class="card" hidden>
+        <h2>Personas registradas</h2>
+        <p class="sub">Datos ficticios de esta sesión de prueba.</p>
+        <input
+          id="filter"
+          placeholder="Buscar por nombre o identificación"
+          aria-label="Buscar personas"
+        />
+        <div id="records"></div>
+      </section>
+      <section id="historial" class="card" hidden>
+        <h2>Historial de actividad</h2>
+        <p class="sub">Acciones realizadas durante esta demostración.</p>
+        <div id="logs"></div>
+      </section>
+      <div class="bottom">
+        <span>CENSO / Gestión de personas</span
+        ><span>Diseño preliminar · Versión 01</span>
+      </div>
+    </main>
+    <div id="toast" class="toast" role="status" hidden></div>
+    <div id="login" class="login">
+      <form class="card" id="loginForm">
+        <span class="eyebrow">CENSO · ACCESO RESTRINGIDO</span>
+        <h1>Bienvenido</h1>
+        <p>Vista previa del acceso para personas autorizadas.</p>
+        <label
+          >Correo<input
+            type="email"
+            placeholder="operador@ejemplo.com"
+            autocomplete="off" /></label
+        ><label
+          >Contraseña<input
+            type="password"
+            placeholder="Solo una representación visual"
+            autocomplete="off"
+        /></label>
+        <p class="sub" style="margin-top: 15px">
+          No ingresés credenciales reales. Este acceso es simulado.
+        </p>
+        <button class="wide">Entrar a la demostración →</button>
+      </form>
+    </div>
+    <script src="app.js"></script>
+  </body>
+</html>
